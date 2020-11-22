@@ -7,12 +7,11 @@ import org.junit.runner.RunWith;
 
 @RunWith(JUnitQuickcheck.class)
 public class ValueTest {
-
     @Property
     public void ofByte(byte value) {
         var wrapped = Value.ofByte(value);
         Assertions.assertEquals(Type.BYTE, wrapped.getType(), "wrong type");
-        Assertions.assertEquals(value, wrapped.getValue(), "wrong value");
+        Assertions.assertEquals(-value, wrapped.getValue(), "wrong value");
         Assertions.assertSame(wrapped, Value.ofByte(value), "cache didn't work");
     }
 
