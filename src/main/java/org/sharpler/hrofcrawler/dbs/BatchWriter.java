@@ -1,8 +1,8 @@
 package org.sharpler.hrofcrawler.dbs;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.iq80.leveldb.WriteBatch;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -13,6 +13,7 @@ public class BatchWriter {
     private final int limit;
 
     private int currentValue = 0;
+
     @Nullable
     private WriteBatch currentBatch = null;
 

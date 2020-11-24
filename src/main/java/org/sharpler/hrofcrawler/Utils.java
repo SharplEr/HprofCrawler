@@ -1,26 +1,24 @@
 package org.sharpler.hrofcrawler;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.function.ToLongFunction;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.fusesource.leveldbjni.JniDBFactory;
 import org.iq80.leveldb.DB;
 import org.iq80.leveldb.Options;
 import org.sharpler.hrofcrawler.entries.InstanceEntry;
 import org.sharpler.hrofcrawler.views.InstanceView;
+
+import javax.annotation.Nullable;
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+import java.util.function.Function;
+import java.util.function.ToLongFunction;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public final class Utils {
     private static final ObjectMapper MAPPER = new ObjectMapper();
