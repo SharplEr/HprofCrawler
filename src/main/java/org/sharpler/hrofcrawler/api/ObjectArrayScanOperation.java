@@ -8,7 +8,7 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public interface ObjectArrayScanOperation<T> {
-    public Stream<ClassView> classFilter(Collection<ClassView> classes);
+    Stream<ClassView> classFilter(Collection<ClassView> classes);
 
     Predicate<ObjectArrayView> getConsumer(ClassView clazz);
 

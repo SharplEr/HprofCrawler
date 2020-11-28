@@ -121,6 +121,7 @@ public final class Utils {
         };
     }
 
+    @SuppressWarnings("OverlyComplexBooleanExpression")
     public static long deserializeLong(byte[] bytes) {
         return (bytes[0] & 0xFFL) << 56
                 | (bytes[1] & 0xFFL) << 48
@@ -132,6 +133,7 @@ public final class Utils {
                 | (bytes[7] & 0xFFL);
     }
 
+    @SuppressWarnings("OverlyComplexBooleanExpression")
     public static long deserializeSecondLong(byte[] bytes) {
         return (bytes[8] & 0xFFL) << 56
                 | (bytes[9] & 0xFFL) << 48
@@ -146,8 +148,7 @@ public final class Utils {
     public static <V, E> Collector<E, ?, Long2ObjectOpenHashMap<V>>
     toLong2ObjectOpenHashMap(
             ToLongFunction<? super E> keyMapper,
-            Function<? super E, ? extends V> valueMapper)
-    {
+            Function<? super E, ? extends V> valueMapper) {
         return Collector.of(
                 Long2ObjectOpenHashMap::new,
                 (map, x) -> map.put(keyMapper.applyAsLong(x), valueMapper.apply(x)),

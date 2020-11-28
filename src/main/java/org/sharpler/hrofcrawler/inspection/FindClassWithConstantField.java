@@ -1,19 +1,16 @@
 package org.sharpler.hrofcrawler.inspection;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import org.sharpler.hrofcrawler.api.ScanOperation;
 import org.sharpler.hrofcrawler.parser.Value;
 import org.sharpler.hrofcrawler.views.ClassView;
 import org.sharpler.hrofcrawler.views.InstanceView;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public final class FindClassWithConstantField implements ScanOperation<List<FindClassWithConstantField.Info>> {
 
@@ -47,23 +44,23 @@ public final class FindClassWithConstantField implements ScanOperation<List<Find
     }
 
     private static class InfoBuilder implements Predicate<InstanceView> {
-        private boolean[] isUnique = null;
+        private final boolean[] isUnique;
+        @Nullable
         private List<Value> valuesBase = null;
         private final ClassView classView;
 
         public InfoBuilder(ClassView classView) {
             this.classView = classView;
-            isUnique = new boolean[classView.getFields().size()];
+            this.isUnique = new boolean[classView.getFields().size()];
             Arrays.fill(isUnique, true);
         }
 
         private void setup(InstanceView view) {
             valuesBase = view.getFields();
-
         }
 
         @Override
-        public boolean test(InstanceView view) {
+        public final boolean test(@Nonnull InstanceView view) {
             if (valuesBase == null) {
                 setup(view);
                 return false;
@@ -74,10 +71,10 @@ public final class FindClassWithConstantField implements ScanOperation<List<Find
 
             for (int i = 0; i < valuesBase.size(); i++) {
                 if (isUnique[i]) {
-                    if (!valuesBase.get(i).equals(values.get(i))) {
-                        isUnique[i] = false;
-                    } else {
+                    if (valuesBase.get(i).equals(values.get(i))) {
                         hasNoUnique = false;
+                    } else {
+                        isUnique[i] = false;
                     }
                 }
             }
@@ -85,7 +82,10 @@ public final class FindClassWithConstantField implements ScanOperation<List<Find
             return hasNoUnique;
         }
 
-        public Info build() {
+        public final Info build() {
+            if (valuesBase == null) {
+                return new Info(classView, Map.of());
+            }
             HashMap<String, Value> constants = new HashMap<>();
 
             for (int i = 0; i < valuesBase.size(); i++) {

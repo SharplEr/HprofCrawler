@@ -1,4 +1,4 @@
 @NonNullByDefault
-package org.sharpler.hrofcrawler.inspection;
+package org.sharpler.hrofcrawler.api;
 
 import org.sharpler.hrofcrawler.NonNullByDefault;

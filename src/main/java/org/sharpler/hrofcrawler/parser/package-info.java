@@ -1,4 +1,5 @@
-@ParametersAreNonnullByDefault
+@NonNullByDefault
 package org.sharpler.hrofcrawler.parser;
 
-import javax.annotation.ParametersAreNonnullByDefault;
+
+import org.sharpler.hrofcrawler.NonNullByDefault;

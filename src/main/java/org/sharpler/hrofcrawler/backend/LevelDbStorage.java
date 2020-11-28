@@ -40,7 +40,7 @@ public final class LevelDbStorage implements Storage, AutoCloseable {
     public Optional<InstanceView> lookupObject(long objectId) {
         OptionalLong classId = object2Class.findClassId(objectId);
 
-        if (!classId.isPresent()) {
+        if (classId.isEmpty()) {
             return Optional.empty();
         }
 

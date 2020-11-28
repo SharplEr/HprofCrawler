@@ -20,7 +20,7 @@ public class ObjectArraysDb implements AutoCloseable {
         writer = new BatchWriter(db::createWriteBatch, db::write, 1000);
     }
 
-    public void put(ObjectArray array) {
+    public final void put(ObjectArray array) {
         writer.add(
                 Utils.serializeTwoLong(array.getElementsClassId(), array.getObjectId()),
                 array.serialize()
@@ -32,7 +32,7 @@ public class ObjectArraysDb implements AutoCloseable {
                 .map(PrimArray::deserialize);
     }
 
-    public void scan(long elementsClassId, Predicate<? super ObjectArray> consumer) {
+    public final void scan(long elementsClassId, Predicate<? super ObjectArray> consumer) {
         try (DBIterator iterator = db.iterator()) {
             iterator.seek(Utils.serializeLong(elementsClassId));
             while (iterator.hasNext()) {
@@ -51,13 +51,13 @@ public class ObjectArraysDb implements AutoCloseable {
         }
     }
 
-    public void compact() {
+    public final void compact() {
         writer.flush();
         db.compactRange(Utils.serializeTwoLong(0L, 0L), Utils.serializeTwoLong(-1L, -1L));
     }
 
     @Override
-    public void close() throws Exception {
+    public final void close() throws Exception {
         db.close();
     }
 }

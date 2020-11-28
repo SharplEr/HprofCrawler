@@ -13,19 +13,19 @@ public class ObjectArray {
         this.values = values;
     }
 
-    public long getObjectId() {
+    public final long getObjectId() {
         return objectId;
     }
 
-    public long getElementsClassId() {
+    public final long getElementsClassId() {
         return elementsClassId;
     }
 
-    public long[] getValues() {
+    public final long[] getValues() {
         return values;
     }
 
-    public byte[] serialize() {
+    public final byte[] serialize() {
         ByteBuffer buffer = ByteBuffer.allocate(
                 2 * Long.BYTES +
                         Long.BYTES * values.length

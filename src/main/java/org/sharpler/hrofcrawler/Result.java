@@ -19,6 +19,7 @@ public final class Result<TOk, TError> {
         return new Result<>(value, false);
     }
 
+    @SuppressWarnings("unchecked")
     public TOk getOk() {
         if (!isOk) {
             throw new IllegalStateException("isOk == false");
@@ -26,6 +27,7 @@ public final class Result<TOk, TError> {
         return (TOk) value;
     }
 
+    @SuppressWarnings("unchecked")
     public TError getError() {
         if (isOk) {
             throw new IllegalStateException("isOk == true");
@@ -37,13 +39,13 @@ public final class Result<TOk, TError> {
         return isOk;
     }
 
-    public void ifOk(Consumer<TOk> action) {
+    public void ifOk(Consumer<? super TOk> action) {
         if (isOk) {
             action.accept(getOk());
         }
     }
 
-    public void ifError(Consumer<TError> action) {
+    public void ifError(Consumer<? super TError> action) {
         if (!isOk) {
             action.accept(getError());
         }

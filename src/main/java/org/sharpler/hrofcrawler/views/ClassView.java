@@ -1,11 +1,11 @@
 package org.sharpler.hrofcrawler.views;
 
-import java.util.List;
-
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.sharpler.hrofcrawler.entries.ClassEntry;
 import org.sharpler.hrofcrawler.entries.FieldEntry;
 import org.sharpler.hrofcrawler.parser.Type;
+
+import java.util.List;
 
 public final class ClassView {
     private final String name;
@@ -36,7 +36,13 @@ public final class ClassView {
     }
 
     public static ClassView of(ClassEntry entry) {
-        return new ClassView(entry.getName(), entry.getId(), entry.getSuperClassId(), entry.getInstanceSize(), entry.getFields());
+        return new ClassView(
+                entry.getName(),
+                entry.getId(),
+                entry.getSuperClassId(),
+                entry.getInstanceSize(),
+                entry.getFields()
+        );
     }
 
     public String getName() {

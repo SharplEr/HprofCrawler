@@ -28,7 +28,11 @@ public interface RecordHandler {
                     long totalInstancesAllocated,
                     AllocSite[] sites);
 
-    void heapSummary(int totalLiveBytes, int totalLiveInstances, long totalBytesAllocated, long totalInstancesAllocated);
+    void heapSummary(
+            int totalLiveBytes,
+            int totalLiveInstances,
+            long totalBytesAllocated,
+            long totalInstancesAllocated);
 
     void startThread(int threadSerialNum,
                      long threadObjectId,

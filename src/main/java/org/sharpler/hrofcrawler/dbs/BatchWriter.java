@@ -8,8 +8,8 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class BatchWriter {
-    private final Supplier<WriteBatch> generator;
-    private final Consumer<WriteBatch> flusher;
+    private final Supplier<? extends WriteBatch> generator;
+    private final Consumer<? super WriteBatch> flusher;
     private final int limit;
 
     private int currentValue = 0;
@@ -17,10 +17,9 @@ public class BatchWriter {
     @Nullable
     private WriteBatch currentBatch = null;
 
-
     public BatchWriter(
-            Supplier<WriteBatch> generator,
-            Consumer<WriteBatch> flusher,
+            Supplier<? extends WriteBatch> generator,
+            Consumer<? super WriteBatch> flusher,
             int limit)
     {
         this.generator = generator;
@@ -30,7 +29,7 @@ public class BatchWriter {
         assert limit > 1;
     }
 
-    private void updateIfNeed() {
+    public final void add(byte[] key, byte[] value) {
         if (currentBatch == null) {
             currentBatch = generator.get();
             currentValue = 0;
@@ -44,15 +43,11 @@ public class BatchWriter {
             currentBatch = generator.get();
             currentValue = 0;
         }
-    }
-
-    public void add(byte[] key, byte[] value) {
-        updateIfNeed();
         currentBatch.put(key, value);
         currentValue++;
     }
 
-    public void flush() {
+    public final void flush() {
         if (currentBatch != null) {
             flusher.accept(currentBatch);
             try {
