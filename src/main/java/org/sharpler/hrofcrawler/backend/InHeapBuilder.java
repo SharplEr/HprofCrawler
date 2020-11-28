@@ -1,10 +1,5 @@
 package org.sharpler.hrofcrawler.backend;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
@@ -14,11 +9,16 @@ import org.sharpler.hrofcrawler.parser.*;
 import org.sharpler.hrofcrawler.views.ClassView;
 import org.sharpler.hrofcrawler.views.InstanceView;
 
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 public final class InHeapBuilder extends DummyHandler implements BackendBuilder {
     private final Long2ObjectOpenHashMap<ClassView> classes = new Long2ObjectOpenHashMap<>();
     private final Long2ObjectOpenHashMap<String> names = new Long2ObjectOpenHashMap<>();
 
-    private final Long2ObjectOpenHashMap<String> classesNames = new Long2ObjectOpenHashMap();
+    private final Long2ObjectOpenHashMap<String> classesNames = new Long2ObjectOpenHashMap<>();
 
     private final Long2ObjectOpenHashMap<InstanceView> instances = new Long2ObjectOpenHashMap<>();
 
@@ -42,10 +42,19 @@ public final class InHeapBuilder extends DummyHandler implements BackendBuilder 
 
 
     @Override
-    public void classDump(long classObjId, int stackTraceSerialNum, long superClassObjId, long classLoaderObjId,
-                          long signersObjId, long protectionDomainObjId, long reserved1, long reserved2, int instanceSize,
-                          Constant[] constants, Static[] statics, InstanceField[] instanceFields)
-    {
+    public void classDump(
+            long classObjId,
+            int stackTraceSerialNum,
+            long superClassObjId,
+            long classLoaderObjId,
+            long signersObjId,
+            long protectionDomainObjId,
+            long reserved1,
+            long reserved2,
+            int instanceSize,
+            Constant[] constants,
+            Static[] statics,
+            InstanceField[] instanceFields) {
         String className = Objects.requireNonNull(classesNames.get(classObjId));
 
         classes.put(
@@ -87,7 +96,7 @@ public final class InHeapBuilder extends DummyHandler implements BackendBuilder 
                         long superClassId = classView.getSuperClassId();
                         if (superClassId == 0) {
                             marked.add(id);
-                            return; // find Object class.
+                            // find Object class.
                         } else if (!unmarked.contains(superClassId) || marked.contains(superClassId)) {
                             ClassView superClassView = classes.get(superClassId);
                             classView.getFields().addAll(superClassView.getFields());

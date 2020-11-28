@@ -44,8 +44,7 @@ public final class Backend {
         long total = classes.stream().mapToLong(ClassView::getCount).sum();
         long current = 0L;
 
-        for (int i = 0; i < classes.size(); i++) {
-            ClassView classView = classes.get(i);
+        for (ClassView classView : classes) {
             storage.scanClass(classView.getId(), operation.getConsumer(classView));
 
             current += classView.getCount();
@@ -65,8 +64,7 @@ public final class Backend {
         long total = types.stream().mapToLong(index::getPrimArrayCount).sum();
         long current = 0L;
 
-        for (int i = 0; i < types.size(); i++) {
-            Type type = types.get(i);
+        for (Type type : types) {
             storage.scanPrimArray(type, operation.getConsumer(type));
 
             current += index.getPrimArrayCount(type);
@@ -89,8 +87,7 @@ public final class Backend {
                 .sum();
         long current = 0L;
 
-        for (int i = 0; i < classes.size(); i++) {
-            ClassView classView = classes.get(i);
+        for (ClassView classView : classes) {
             storage.scanObjectArray(classView.getId(), operation.getConsumer(classView));
 
             current += index.getObjectArrayCount(classView.getId());

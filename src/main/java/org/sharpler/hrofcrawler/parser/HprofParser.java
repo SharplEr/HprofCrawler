@@ -1,21 +1,14 @@
 package org.sharpler.hrofcrawler.parser;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.DataInput;
-import java.io.DataInputStream;
-import java.io.EOFException;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+
+import java.io.*;
+import java.util.ArrayList;
 
 public final class HprofParser {
 
-    private RecordHandler handler;
-    private Long2ObjectOpenHashMap<ClassInfo> classMap;
+    private final RecordHandler handler;
+    private final Long2ObjectOpenHashMap<ClassInfo> classMap;
 
     public HprofParser(RecordHandler handler) {
         this.handler = handler;
@@ -79,9 +72,7 @@ public final class HprofParser {
             bytesRead++;
             if (bytesRead >= bytes.length) {
                 byte[] newBytes = new byte[bytesRead + 20];
-                for (int i = 0; i < bytes.length; i++) {
-                    newBytes[i] = bytes[i];
-                }
+                System.arraycopy(bytes, 0, newBytes, 0, bytes.length);
                 bytes = newBytes;
             }
         }
@@ -560,7 +551,7 @@ public final class HprofParser {
                     instanceFields[i] = new InstanceField(fieldNameStringId, type);
                 }
 
-                /**
+                /*
                  * We need to know the types of the values in an instance record when
                  * we parse that record.  To do that we need to look up the class and
                  * its superclasses.  So we need to store class records in a hash
@@ -587,7 +578,7 @@ public final class HprofParser {
                 bArr1 = new byte[i2];
                 in.readFully(bArr1);
 
-                /**
+                /*
                  * because class dump records come *after* instance dump records,
                  * we don't know how to interpret the values yet.  we have to
                  * record the instances and process them at the end.
@@ -722,8 +713,8 @@ public final class HprofParser {
         long nextClass = i.classObjId;
         while (nextClass != 0) {
             ClassInfo ci = classMap.get(nextClass);
-            nextClass = ci.superClassObjId;
-            for (InstanceField field : ci.instanceFields) {
+            nextClass = ci.getSuperClassObjId();
+            for (InstanceField field : ci.getInstanceFields()) {
                 Value v = null;
                 switch (field.type) {
                     case OBJ:     // object
@@ -781,23 +772,5 @@ public final class HprofParser {
         }
 
         return id;
-    }
-
-
-    /* Utility */
-
-    private int mySkipBytes(int n, DataInput in) throws IOException {
-        int bytesRead = 0;
-
-        try {
-            while (bytesRead < n) {
-                in.readByte();
-                bytesRead++;
-            }
-        } catch (EOFException e) {
-            // expected
-        }
-
-        return bytesRead;
     }
 }

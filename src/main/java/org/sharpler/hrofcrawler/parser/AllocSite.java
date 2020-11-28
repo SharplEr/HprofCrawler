@@ -1,13 +1,13 @@
 package org.sharpler.hrofcrawler.parser;
 
 public class AllocSite {
-    public byte arrayIndicator;
-    public int classSerialNum;
-    public int stackTraceSerialNum;
-    public int numLiveBytes;
-    public int numLiveInstances;
-    public int numBytesAllocated;
-    public int numInstancesAllocated;
+    public final byte arrayIndicator;
+    public final int classSerialNum;
+    public final int stackTraceSerialNum;
+    public final int numLiveBytes;
+    public final int numLiveInstances;
+    public final int numBytesAllocated;
+    public final int numInstancesAllocated;
 
     public AllocSite(byte arrayIndicator, int classSerialNum,
                      int stackTraceSerialNum, int numLiveBytes, int numLiveInstances,

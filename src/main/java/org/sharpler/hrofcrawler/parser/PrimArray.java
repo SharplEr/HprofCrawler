@@ -14,7 +14,6 @@ public class PrimArray {
 
     PrimArray(Type type, long objectId, Object array) {
         this.objectId = objectId;
-        assert array != null;
         this.type = type;
         this.array = array;
 
@@ -48,19 +47,19 @@ public class PrimArray {
         }
     }
 
-    public Type getType() {
+    public final Type getType() {
         return type;
     }
 
-    public Object getArrayRaw() {
+    public final Object getArrayRaw() {
         return array;
     }
 
-    public long getObjectId() {
+    public final long getObjectId() {
         return objectId;
     }
 
-    public int getLength() {
+    public final int getLength() {
         switch (type) {
             case LONG:
                 return ((long[]) array).length;
@@ -83,7 +82,7 @@ public class PrimArray {
         throw new IllegalStateException();
     }
 
-    public <T> T map(
+    public final <T> T map(
             Function<long[], ? extends T> forLong,
             Function<int[], ? extends T> forInt,
             Function<short[], ? extends T> forShort,
@@ -116,7 +115,7 @@ public class PrimArray {
         throw new IllegalStateException();
     }
 
-    public byte[] serialize() {
+    public final byte[] serialize() {
         int length = getLength();
 
         ByteBuffer buffer = ByteBuffer.allocate(
@@ -183,7 +182,7 @@ public class PrimArray {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public final boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof PrimArray)) return false;
 
@@ -205,7 +204,7 @@ public class PrimArray {
     }
 
     @Override
-    public int hashCode() {
+    public final int hashCode() {
         int result = type.hashCode();
         result = 31 * result + (int) (objectId ^ (objectId >>> 32));
         result = 31 * result + array.hashCode();
@@ -213,7 +212,7 @@ public class PrimArray {
     }
 
     @Override
-    public String toString() {
+    public final String toString() {
         return new StringJoiner(", ", PrimArray.class.getSimpleName() + "[", "]")
                 .add("type=" + type)
                 .add("objectId=" + objectId)

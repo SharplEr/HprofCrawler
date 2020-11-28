@@ -120,6 +120,7 @@ public final class FindPrimArrayWithTooWideRange implements
         return currentMin;
     }
 
+    @SuppressWarnings("AssignmentToMethodParameter")
     public static Type newCurrentMin(long value, Type currentMin) {
         if (currentMin == Type.BYTE) {
             if (value <= Byte.MAX_VALUE && value >= Byte.MIN_VALUE) {
