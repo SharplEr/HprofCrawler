@@ -4,8 +4,6 @@ import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
-import org.iq80.leveldb.DB;
-import org.sharpler.hrofcrawler.Result;
 import org.sharpler.hrofcrawler.Utils;
 import org.sharpler.hrofcrawler.dbs.InstancesDb;
 import org.sharpler.hrofcrawler.dbs.Object2ClassDb;
@@ -16,7 +14,6 @@ import org.sharpler.hrofcrawler.entries.InstanceEntry;
 import org.sharpler.hrofcrawler.parser.*;
 import org.sharpler.hrofcrawler.views.ClassView;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -52,29 +49,13 @@ public final class LevelDbBuilder extends DummyHandler implements BackendBuilder
     }
 
     public static LevelDbBuilder of(String dir) {
-        Result<DB, Exception> object2ClassDb = Utils.openDb(dir + "/object2Class");
-        Result<DB, Exception> instancesDb = Utils.openDb(dir + "/instances");
-        Result<DB, Exception> arraysDb = Utils.openDb(dir + "/prim_arrays");
-        Result<DB, Exception> objectArraysDb = Utils.openDb(dir + "/object_arrays");
-
-        List<Result<DB, Exception>> allDbs = Arrays.asList(object2ClassDb, instancesDb, arraysDb, objectArraysDb);
-
-        if (allDbs.stream().allMatch(Result::isOk)) {
-            return new LevelDbBuilder(
-                    new Object2ClassDb(object2ClassDb.getOk()),
-                    new InstancesDb(instancesDb.getOk()),
-                    new PrimArraysDb(arraysDb.getOk()),
-                    new ObjectArraysDb(objectArraysDb.getOk())
-            );
-        }
-
-        RuntimeException exception = new RuntimeException("Can't open some dbs");
-
-        allDbs.stream()
-                .flatMap(x -> x.isOk() ? Utils.safeClose(x.getOk()) : Stream.of(x.getError()))
-                .forEach(exception::addSuppressed);
-
-        throw exception;
+        return Utils.resourceOwner(
+                LevelDbBuilder::new,
+                () -> new Object2ClassDb(Utils.openDb(dir + "/object2Class")),
+                () -> new InstancesDb(Utils.openDb(dir + "/instances")),
+                () -> new PrimArraysDb(Utils.openDb(dir + "/prim_arrays")),
+                () -> new ObjectArraysDb(Utils.openDb(dir + "/object_arrays"))
+        );
     }
 
     public void addName(long id, String name) {

@@ -7,6 +7,8 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.fusesource.leveldbjni.JniDBFactory;
 import org.iq80.leveldb.DB;
 import org.iq80.leveldb.Options;
+import org.jooq.lambda.Unchecked;
+import org.jooq.lambda.function.Function4;
 import org.sharpler.hrofcrawler.entries.InstanceEntry;
 import org.sharpler.hrofcrawler.views.InstanceView;
 
@@ -14,7 +16,9 @@ import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -36,11 +40,12 @@ public final class Utils {
         // No-op.
     }
 
-    public static Result<DB, Exception> openDb(String path) {
+    public static DB openDb(String path) {
         try {
-            return Result.ok(JniDBFactory.factory.open(new File(path), LEVEL_DB_OPTIONS));
+            return JniDBFactory.factory.open(new File(path), LEVEL_DB_OPTIONS);
         } catch (Exception e) {
-            return Result.error(e);
+            Unchecked.THROWABLE_TO_RUNTIME_EXCEPTION.accept(e);
+            throw new IllegalStateException("Exception handler must throw a RuntimeException", e);
         }
     }
 
@@ -162,5 +167,38 @@ public final class Utils {
     @Nullable
     public static Void nullTs() {
         return null;
+    }
+
+    public static <
+            A extends AutoCloseable,
+            B extends AutoCloseable,
+            C extends AutoCloseable,
+            D extends AutoCloseable,
+            R>
+    R resourceOwner(
+            Function4<A, B, C, D, R> ownerBuilder,
+            Supplier<A> aSupplier,
+            Supplier<B> bSupplier,
+            Supplier<C> cSupplier,
+            Supplier<D> dSupplier
+    ) {
+        A a = null;
+        B b = null;
+        C c = null;
+        D d = null;
+        try {
+            a = aSupplier.get();
+            b = bSupplier.get();
+            c = cSupplier.get();
+            d = dSupplier.get();
+
+            return ownerBuilder.apply(a, b, c, d);
+        } catch (Exception e) {
+            Stream.of(a, b, c, d)
+                    .filter(Objects::nonNull)
+                    .flatMap(Utils::safeClose)
+                    .forEach(e::addSuppressed);
+            throw e;
+        }
     }
 }
