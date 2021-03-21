@@ -1,6 +1,6 @@
 package org.sharpler.hrofcrawler.parser;
 
-public class ClassInfo {
+public final class ClassInfo {
     private final long classObjId;
     private final long superClassObjId;
     private final int instanceSize;

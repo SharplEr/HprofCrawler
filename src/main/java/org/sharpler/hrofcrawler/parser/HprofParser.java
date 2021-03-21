@@ -15,6 +15,9 @@ public final class HprofParser {
         classMap = new Long2ObjectOpenHashMap<>();
     }
 
+    // TODO make it single-pass
+    // TODO make async reading and processing
+    // TODO Try FileChannel and benchmark it vs current solution.
     public void parse(File file) throws IOException {
 
         /* The file format looks like this:
@@ -704,19 +707,19 @@ public final class HprofParser {
     }
 
     private void processInstance(Instance i, int idSize) throws IOException {
-        ByteArrayInputStream bs = new ByteArrayInputStream(i.packedValues);
+        ByteArrayInputStream bs = new ByteArrayInputStream(i.getPackedValues());
         DataInputStream input = new DataInputStream(bs);
 
         ArrayList<Value> values = new ArrayList<>();
 
         // superclass of Object is 0
-        long nextClass = i.classObjId;
+        long nextClass = i.getClassObjId();
         while (nextClass != 0) {
             ClassInfo ci = classMap.get(nextClass);
             nextClass = ci.getSuperClassObjId();
             for (InstanceField field : ci.getInstanceFields()) {
                 Value v = null;
-                switch (field.type) {
+                switch (field.getType()) {
                     case OBJ:     // object
                         long vid = readId(idSize, input);
                         v = Value.ofLong(vid, true);
@@ -757,7 +760,7 @@ public final class HprofParser {
                 values.add(v);
             }
         }
-        handler.instanceDump(i.objId, i.stackTraceSerialNum, i.classObjId, values);
+        handler.instanceDump(i.getObjId(), i.getStackTraceSerialNum(), i.getClassObjId(), values);
     }
 
     private static long readId(int idSize, DataInput in) throws IOException {

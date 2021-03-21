@@ -2,7 +2,7 @@ package org.sharpler.hrofcrawler.parser;
 
 import java.nio.ByteBuffer;
 
-public class ObjectArray {
+public final class ObjectArray {
     private final long objectId;
     private final long elementsClassId;
     private final long[] values;

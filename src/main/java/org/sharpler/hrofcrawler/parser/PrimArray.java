@@ -7,7 +7,7 @@ import java.util.Arrays;
 import java.util.StringJoiner;
 import java.util.function.Function;
 
-public class PrimArray {
+public final class PrimArray {
     private final Type type;
     private final long objectId;
     private final Object array;

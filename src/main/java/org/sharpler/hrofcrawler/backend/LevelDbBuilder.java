@@ -96,8 +96,8 @@ public final class LevelDbBuilder extends DummyHandler implements BackendBuilder
                         superClassObjId,
                         instanceSize,
                         Stream.of(instanceFields)
-                                .map(x -> new FieldEntry(Objects.requireNonNull(names.get(x.fieldNameStringId)),
-                                        x.type))
+                                .map(x -> new FieldEntry(Objects.requireNonNull(names.get(x.getFieldNameStringId())),
+                                        x.getType()))
                                 .collect(Collectors.toList())
                 )
         );

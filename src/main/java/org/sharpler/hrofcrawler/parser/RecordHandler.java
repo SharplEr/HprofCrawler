@@ -20,26 +20,31 @@ public interface RecordHandler {
 
     void stackTrace(int stackTraceSerialNum, int threadSerialNum, int numFrames, long[] stackFrameIds);
 
-    void allocSites(short bitMaskFlags,
-                    float cutoffRatio,
-                    int totalLiveBytes,
-                    int totalLiveInstances,
-                    long totalBytesAllocated,
-                    long totalInstancesAllocated,
-                    AllocSite[] sites);
+    void allocSites(
+            short bitMaskFlags,
+            float cutoffRatio,
+            int totalLiveBytes,
+            int totalLiveInstances,
+            long totalBytesAllocated,
+            long totalInstancesAllocated,
+            AllocSite[] sites
+    );
 
     void heapSummary(
             int totalLiveBytes,
             int totalLiveInstances,
             long totalBytesAllocated,
-            long totalInstancesAllocated);
+            long totalInstancesAllocated
+    );
 
-    void startThread(int threadSerialNum,
-                     long threadObjectId,
-                     int stackTraceSerialNum,
-                     long threadNameStringId,
-                     long threadGroupNameId,
-                     long threadParentGroupNameId);
+    void startThread(
+            int threadSerialNum,
+            long threadObjectId,
+            int stackTraceSerialNum,
+            long threadNameStringId,
+            long threadGroupNameId,
+            long threadParentGroupNameId
+    );
 
     void endThread(int threadSerialNum);
 
@@ -71,18 +76,20 @@ public interface RecordHandler {
 
     void rootThreadObj(long objId, int threadSerialNum, int stackTraceSerialNum);
 
-    void classDump(long classObjId,
-                   int stackTraceSerialNum,
-                   long superClassObjId,
-                   long classLoaderObjId,
-                   long signersObjId,
-                   long protectionDomainObjId,
-                   long reserved1,
-                   long reserved2,
-                   int instanceSize,
-                   Constant[] constants,
-                   Static[] statics,
-                   InstanceField[] instanceFields);
+    void classDump(
+            long classObjId,
+            int stackTraceSerialNum,
+            long superClassObjId,
+            long classLoaderObjId,
+            long signersObjId,
+            long protectionDomainObjId,
+            long reserved1,
+            long reserved2,
+            int instanceSize,
+            Constant[] constants,
+            Static[] statics,
+            InstanceField[] instanceFields
+    );
 
     void instanceDump(long objId, int stackTraceSerialNum, long classObjId, List<Value> instanceFieldValues);
 
