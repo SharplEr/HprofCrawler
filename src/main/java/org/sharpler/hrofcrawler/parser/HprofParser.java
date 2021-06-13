@@ -1,9 +1,12 @@
 package org.sharpler.hrofcrawler.parser;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import org.jooq.lambda.fi.util.function.CheckedSupplier;
 
+import javax.annotation.Nullable;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.function.Supplier;
 
 public final class HprofParser {
 
@@ -16,7 +19,18 @@ public final class HprofParser {
     }
 
     public void parse(File file) throws IOException {
+        parse(
+                CheckedSupplier.unchecked(() -> {
+                    FileInputStream fs = new FileInputStream(file);
+                    return new DataInputStream(new BufferedInputStream(fs));
+                })
+        );
+    }
 
+    // TODO make it single-pass
+    // TODO make async reading and processing
+    // TODO Try FileChannel and benchmark it vs current solution.
+    public void parse(Supplier<? extends DataInputStream> streamProvider) throws IOException {
         /* The file format looks like this:
          *
          * header:
@@ -35,8 +49,7 @@ public final class HprofParser {
          *   [u1]* - body
          */
 
-        FileInputStream fs = new FileInputStream(file);
-        DataInputStream in = new DataInputStream(new BufferedInputStream(fs));
+        DataInputStream in = streamProvider.get();
 
         // header
         String format = readUntilNull(in);
@@ -51,8 +64,7 @@ public final class HprofParser {
         } while (!done);
         in.close();
 
-        FileInputStream fsSecond = new FileInputStream(file);
-        DataInputStream inSecond = new DataInputStream(new BufferedInputStream(fsSecond));
+        DataInputStream inSecond = streamProvider.get();
         readUntilNull(inSecond); // format
         inSecond.readInt(); // idSize
         inSecond.readLong(); // startTime
@@ -63,7 +75,7 @@ public final class HprofParser {
         handler.finished();
     }
 
-    public static String readUntilNull(DataInput in) throws IOException {
+    private static String readUntilNull(DataInput in) throws IOException {
 
         int bytesRead = 0;
         byte[] bytes = new byte[25];
@@ -116,7 +128,7 @@ public final class HprofParser {
                 // String in UTF-8
                 l1 = readId(idSize, in);
                 bytesLeft -= idSize;
-                bArr1 = new byte[(int) bytesLeft];
+                bArr1 = new byte[Math.toIntExact(bytesLeft)];
                 in.readFully(bArr1);
                 if (isFirstPass) {
                     handler.stringInUTF8(l1, new String(bArr1));
@@ -263,6 +275,8 @@ public final class HprofParser {
                 // CPU samples
                 i1 = in.readInt();
                 i2 = in.readInt();    // num samples that follow
+                // TODO:: maybe add assert: bytesLeft == 8*(i2+1)
+
 
                 CPUSample[] samples = new CPUSample[i2];
                 for (int i = 0; i < samples.length; i++) {
@@ -712,7 +726,12 @@ public final class HprofParser {
         // superclass of Object is 0
         long nextClass = i.classObjId;
         while (nextClass != 0) {
-            ClassInfo ci = classMap.get(nextClass);
+            @Nullable ClassInfo ci = classMap.get(nextClass);
+            if (ci == null) {
+                throw new IllegalStateException(
+                        String.format("Can't find class with id: %d", nextClass)
+                );
+            }
             nextClass = ci.getSuperClassObjId();
             for (InstanceField field : ci.getInstanceFields()) {
                 Value v = null;

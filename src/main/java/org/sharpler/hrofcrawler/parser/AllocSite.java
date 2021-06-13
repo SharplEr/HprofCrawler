@@ -22,4 +22,17 @@ public class AllocSite {
         this.numInstancesAllocated = numInstancesAllocated;
 
     }
+
+    @Override
+    public String toString() {
+        return "AllocSite{" +
+                "arrayIndicator=" + arrayIndicator +
+                ", classSerialNum=" + classSerialNum +
+                ", stackTraceSerialNum=" + stackTraceSerialNum +
+                ", numLiveBytes=" + numLiveBytes +
+                ", numLiveInstances=" + numLiveInstances +
+                ", numBytesAllocated=" + numBytesAllocated +
+                ", numInstancesAllocated=" + numInstancesAllocated +
+                '}';
+    }
 }
