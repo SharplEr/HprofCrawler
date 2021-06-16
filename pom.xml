@@ -24,7 +24,7 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.0.0</version>
                 <configuration>
-                    <mainClass>org.sharpler.hrofcrawler.Main</mainClass>
+                    <mainClass>org.sharpler.hprofcrawler.Main</mainClass>
                 </configuration>
             </plugin>
             <plugin>
@@ -110,11 +110,10 @@
             <artifactId>jmh-generator-annprocess</artifactId>
             <version>RELEASE</version>
         </dependency>
-
         <dependency>
-            <groupId>org.openjdk.jol</groupId>
-            <artifactId>jol-core</artifactId>
-            <version>RELEASE</version>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli</artifactId>
+            <version>4.6.1</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
