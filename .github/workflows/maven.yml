@@ -14,7 +14,7 @@ jobs:
     name: Tests
     strategy:
       matrix:
-        java: [13, 15]
+        java: [15]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2

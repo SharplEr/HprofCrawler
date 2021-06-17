@@ -1,17 +1,12 @@
 package org.sharpler.hprofcrawler.entries;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.sharpler.hprofcrawler.parser.Type;
 
 public final class FieldEntry {
-    @JsonProperty("name")
     private final String name;
-    @JsonProperty("type")
     private final Type type;
 
-    @JsonCreator
-    public FieldEntry(@JsonProperty("name") String name, @JsonProperty("type") Type type) {
+    public FieldEntry(String name, Type type) {
         this.name = name;
         this.type = type;
     }

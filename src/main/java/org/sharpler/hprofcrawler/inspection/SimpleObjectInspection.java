@@ -1,5 +1,6 @@
 package org.sharpler.hprofcrawler.inspection;
 
+import org.sharpler.hprofcrawler.Utils;
 import org.sharpler.hprofcrawler.api.Progress;
 import org.sharpler.hprofcrawler.api.ScanOperation;
 import org.sharpler.hprofcrawler.backend.Backend;
@@ -15,6 +16,6 @@ public final class SimpleObjectInspection<T> implements Inspection {
 
     @Override
     public String run(Backend backend, Progress progress) {
-        return backend.scan(operationGenerator.get(), progress).toString();
+        return Utils.toPrettyString(backend.scan(operationGenerator.get(), progress));
     }
 }

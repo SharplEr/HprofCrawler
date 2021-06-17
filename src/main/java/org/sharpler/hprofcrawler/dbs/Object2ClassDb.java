@@ -11,7 +11,7 @@ public final class Object2ClassDb implements AutoCloseable {
 
     public Object2ClassDb(DB db) {
         this.db = db;
-        writer = new BatchWriter(db::createWriteBatch, db::write, 1000);
+        writer = new BatchWriter(db::createWriteBatch, db::write, 10000);
     }
 
     public void put(long objectId, long classId) {

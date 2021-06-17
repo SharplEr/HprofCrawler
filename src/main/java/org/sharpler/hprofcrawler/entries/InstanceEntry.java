@@ -1,28 +1,19 @@
 package org.sharpler.hprofcrawler.entries;
 
-import java.util.List;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import it.unimi.dsi.fastutil.bytes.ByteArrayList;
+import org.sharpler.hprofcrawler.Utils;
 import org.sharpler.hprofcrawler.parser.Value;
 
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+
 public final class InstanceEntry {
-    @JsonProperty("objectId")
     private final long objectId;
-    @JsonProperty("classId")
     private final long classId;
-    @JsonProperty("fields")
     private final List<Value> fields;
 
-    @JsonCreator
-    public InstanceEntry(
-            @JsonProperty("objectId")
-                    long objectId,
-            @JsonProperty("classId")
-                    long classId,
-            @JsonProperty("fields")
-                    List<Value> fields)
-    {
+    public InstanceEntry(long objectId, long classId, List<Value> fields) {
         this.objectId = objectId;
         this.classId = classId;
         this.fields = fields;
@@ -69,5 +60,33 @@ public final class InstanceEntry {
                 ", classId=" + classId +
                 ", fields=" + fields +
                 '}';
+    }
+
+    private static void addAll(ByteArrayList list, byte[] bytes) {
+        for (var x : bytes) {
+            list.add(x);
+        }
+    }
+
+    public byte[] serialize() {
+        var result = new ByteArrayList();
+        addAll(result, Utils.serializeLong(objectId));
+        addAll(result, Utils.serializeLong(classId));
+        for (var field : fields) {
+            addAll(result, field.serialize());
+        }
+        return result.toByteArray();
+    }
+
+    public static InstanceEntry deserialize(byte[] data) {
+        var buffer = ByteBuffer.wrap(data);
+        var objectId = buffer.getLong();
+        var classId = buffer.getLong();
+        var fields = new ArrayList<Value>();
+        while (buffer.hasRemaining()) {
+            fields.add(Value.deserialize(buffer));
+        }
+
+        return new InstanceEntry(objectId, classId, fields);
     }
 }

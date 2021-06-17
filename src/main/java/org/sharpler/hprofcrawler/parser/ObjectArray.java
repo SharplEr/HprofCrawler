@@ -26,10 +26,7 @@ public class ObjectArray {
     }
 
     public final byte[] serialize() {
-        ByteBuffer buffer = ByteBuffer.allocate(
-                2 * Long.BYTES +
-                        Long.BYTES * values.length
-        );
+        ByteBuffer buffer = ByteBuffer.allocate(2 * Long.BYTES + Long.BYTES * values.length);
 
         buffer.putLong(elementsClassId);
         buffer.putLong(objectId);
