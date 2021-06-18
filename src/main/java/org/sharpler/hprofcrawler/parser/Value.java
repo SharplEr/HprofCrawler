@@ -2,458 +2,212 @@ package org.sharpler.hprofcrawler.parser;
 
 import java.nio.ByteBuffer;
 
-public interface Value {
-    static LongValue ofLong(long value, boolean isObject) {
-        return new LongValue(value, isObject);
+public final class Value {
+    private final Type type;
+    private final long value;
+
+    private Value(Type type, long value) {
+        this.type = type;
+        this.value = value;
     }
 
-    static IntValue ofInt(int value) {
-        return new IntValue(value);
+    private static final Value DOUBLE_ZERO = new Value(Type.DOUBLE, Double.doubleToLongBits(0f));
+    private static final Value DOUBLE_ONE = new Value(Type.DOUBLE, Double.doubleToLongBits(1f));
+
+    public static Value ofDouble(double v) {
+        if (v == 0d) {
+            return DOUBLE_ZERO;
+        }
+        if (v == 1d) {
+            return DOUBLE_ONE;
+        }
+        return new Value(Type.DOUBLE, Double.doubleToLongBits(v));
     }
 
-    static ShortValue ofShort(short value) {
-        return new ShortValue(value);
+    private static final Value FLOAT_ZERO = new Value(Type.FLOAT, Float.floatToIntBits(0f));
+    private static final Value FLOAT_ONE = new Value(Type.FLOAT, Float.floatToIntBits(1f));
+
+    public static Value ofFloat(float v) {
+        if (v == 0f) {
+            return FLOAT_ZERO;
+        }
+        if (v == 1f) {
+            return FLOAT_ONE;
+        }
+
+        return new Value(Type.FLOAT, Float.floatToIntBits(v));
     }
 
-    static CharValue ofChar(char value) {
-        return new CharValue(value);
+    private static final Value[] LONG_CACHE = new Value[4096];
+
+    static {
+        for (int i = 0; i < LONG_CACHE.length; i++) {
+            LONG_CACHE[i] = new Value(Type.LONG, i);
+        }
     }
 
-    static ByteValue ofByte(byte value) {
-        return ByteValue.of(value);
+    public static Value ofLong(long v, boolean isObject) {
+        if (isObject) {
+            return new Value(Type.OBJ, v);
+        }
+        if (v >= 0 && v < LONG_CACHE.length) {
+            return LONG_CACHE[(int) v];
+        }
+        return new Value(Type.LONG, v);
     }
 
-    static BooleanValue ofBool(boolean value) {
-        return BooleanValue.of(value);
+    private static final Value[] INT_CACHE = new Value[4096];
+
+    static {
+        for (int i = 0; i < INT_CACHE.length; i++) {
+            INT_CACHE[i] = new Value(Type.INT, i);
+        }
     }
 
-    static DoubleValue ofDouble(double value) {
-        return new DoubleValue(value);
+    public static Value ofInt(int v) {
+        if (v >= 0 && v < INT_CACHE.length) {
+            return INT_CACHE[v];
+        }
+        return new Value(Type.INT, v);
     }
 
-    static FloatValue ofFloat(float value) {
-        return new FloatValue(value);
+    private static final Value[] SHORT_CACHE = new Value[4096];
+
+    static {
+        for (int i = 0; i < SHORT_CACHE.length; i++) {
+            SHORT_CACHE[i] = new Value(Type.SHORT, i);
+        }
     }
 
-    Type getType();
+    public static Value ofShort(short v) {
+        if (v >= 0 && v < SHORT_CACHE.length) {
+            return SHORT_CACHE[v];
+        }
+        return new Value(Type.SHORT, v);
+    }
 
-    byte[] serialize();
+    private static final Value[] BYTE_CACHE = new Value[256];
 
-    static Value deserialize(ByteBuffer buffer) {
-        return switch (Type.VALUES.get(buffer.get())) {
-            case OBJ -> ofLong(buffer.getLong(), true);
-            case BOOL -> ofBool(buffer.get() == 1);
-            case CHAR -> ofChar(buffer.getChar());
-            case FLOAT -> ofFloat(buffer.getFloat());
-            case DOUBLE -> ofDouble(buffer.getDouble());
-            case BYTE -> ByteValue.of(buffer.get());
-            case SHORT -> ofShort(buffer.getShort());
-            case INT -> ofInt(buffer.getInt());
-            case LONG -> ofLong(buffer.getLong(), false);
+    static {
+        for (int i = 0; i < 256; i++) {
+            BYTE_CACHE[i] = new Value(Type.BYTE, i - 128);
+        }
+    }
+
+    public static Value ofByte(byte v) {
+        return BYTE_CACHE[v + 128];
+    }
+
+    private static final Value[] CHAR_CACHE = new Value[256];
+
+    static {
+        for (int i = 0; i < CHAR_CACHE.length; i++) {
+            CHAR_CACHE[i] = new Value(Type.CHAR, i);
+        }
+    }
+
+    public static Value ofChar(char v) {
+        if (v < CHAR_CACHE.length) {
+            return CHAR_CACHE[v];
+        }
+        return new Value(Type.CHAR, v);
+    }
+
+    private static final Value TRUE = new Value(Type.BOOL, 1);
+    private static final Value FALSE = new Value(Type.BOOL, 0);
+
+    public static Value ofBool(boolean v) {
+        return v ? TRUE : FALSE;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public byte[] serialize() {
+        return new byte[]{
+                (byte) type.ordinal(),
+                (byte) ((value >> 56) & 0xff),
+                (byte) ((value >> 48) & 0xff),
+                (byte) ((value >> 40) & 0xff),
+                (byte) ((value >> 32) & 0xff),
+                (byte) ((value >> 24) & 0xff),
+                (byte) ((value >> 16) & 0xff),
+                (byte) ((value >> 8) & 0xff),
+                (byte) ((value) & 0xff),
         };
     }
 
-
-    final class LongValue implements Value {
-        private final long value;
-        private final boolean isObject;
-
-        LongValue(long value, boolean isObject) {
-            this.value = value;
-            this.isObject = isObject;
-        }
-
-        @Override
-        public Type getType() {
-            return isObject ? Type.OBJ : Type.LONG;
-        }
-
-        @Override
-        public byte[] serialize() {
-            var buffer = ByteBuffer.allocate(1 + Long.BYTES);
-            buffer.put((byte) getType().ordinal());
-            buffer.putLong(value);
-            return buffer.array();
-        }
-
-        public long getValue() {
-            return value;
-        }
-
-        @Override
-        public String toString() {
-            return "LongValue{" +
-                    "value=" + value +
-                    ", isObject=" + isObject +
-                    '}';
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof LongValue)) return false;
-
-            LongValue longValue = (LongValue) o;
-
-            if (value != longValue.value) return false;
-            return isObject == longValue.isObject;
-        }
-
-        @Override
-        public int hashCode() {
-            int result = (int) (value ^ (value >>> 32));
-            result = 31 * result + (isObject ? 1 : 0);
-            return result;
-        }
+    public static Value deserialize(ByteBuffer buffer) {
+        return new Value(
+                Type.VALUES.get(buffer.get()),
+                buffer.getLong()
+        );
     }
 
-    final class IntValue implements Value {
-        private final int value;
-
-        IntValue(int value) {
-            this.value = value;
-        }
-
-        public int getValue() {
-            return value;
-        }
-
-
-        @Override
-        public Type getType() {
-            return Type.INT;
-        }
-
-        @Override
-        public byte[] serialize() {
-            var buffer = ByteBuffer.allocate(1 + Integer.BYTES);
-            buffer.put((byte) getType().ordinal());
-            buffer.putInt(value);
-            return buffer.array();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof IntValue)) return false;
-
-            IntValue intValue = (IntValue) o;
-
-            return value == intValue.value;
-        }
-
-        @Override
-        public int hashCode() {
-            return value;
-        }
-
-        @Override
-        public String toString() {
-            return "IntValue{" +
-                    "value=" + value +
-                    '}';
-        }
+    public long getLongValue() {
+        assert type == Type.LONG || type == Type.OBJ;
+        return value;
     }
 
-    final class ShortValue implements Value {
-        private final short value;
-
-        ShortValue(short value) {
-            this.value = value;
-        }
-
-        public short getValue() {
-            return value;
-        }
-
-        @Override
-        public Type getType() {
-            return Type.SHORT;
-        }
-
-        @Override
-        public byte[] serialize() {
-            var buffer = ByteBuffer.allocate(1 + Short.BYTES);
-            buffer.put((byte) getType().ordinal());
-            buffer.putShort(value);
-            return buffer.array();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof ShortValue)) return false;
-
-            ShortValue that = (ShortValue) o;
-
-            return value == that.value;
-        }
-
-        @Override
-        public int hashCode() {
-            return value;
-        }
-
-        @Override
-        public String toString() {
-            return "ShortValue{" +
-                    "value=" + value +
-                    '}';
-        }
+    public int getIntValue() {
+        assert type == Type.INT;
+        return (int) value;
     }
 
-    final class CharValue implements Value {
-        private final char value;
-
-        CharValue(char value) {
-            this.value = value;
-        }
-
-        public char getValue() {
-            return value;
-        }
-
-        @Override
-        public Type getType() {
-            return Type.CHAR;
-        }
-
-        @Override
-        public byte[] serialize() {
-            var buffer = ByteBuffer.allocate(1 + Character.BYTES);
-            buffer.put((byte) getType().ordinal());
-            buffer.putChar(value);
-            return buffer.array();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof CharValue)) return false;
-
-            CharValue charValue = (CharValue) o;
-
-            return value == charValue.value;
-        }
-
-        @Override
-        public int hashCode() {
-            return value;
-        }
-
-        @Override
-        public String toString() {
-            return "CharValue{" +
-                    "value=" + value +
-                    '}';
-        }
+    public short getShortValue() {
+        assert type == Type.SHORT;
+        return (short) value;
     }
 
-    final class ByteValue implements Value {
-        private static final ByteValue[] cache = new ByteValue[256];
-
-        static {
-            for (int i = 0; i < 256; i++) {
-                cache[i] = new ByteValue((byte) (i - 128));
-            }
-        }
-
-        private final byte value;
-
-        private ByteValue(byte value) {
-            this.value = value;
-        }
-
-        static ByteValue of(byte value) {
-            return cache[value + 128];
-        }
-
-        public byte getValue() {
-            return value;
-        }
-
-        @Override
-        public Type getType() {
-            return Type.BYTE;
-        }
-
-        @Override
-        public byte[] serialize() {
-            var buffer = ByteBuffer.allocate(1 + Byte.BYTES);
-            buffer.put((byte) getType().ordinal());
-            buffer.put(value);
-            return buffer.array();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof ByteValue)) return false;
-
-            ByteValue byteValue = (ByteValue) o;
-
-            return value == byteValue.value;
-        }
-
-        @Override
-        public int hashCode() {
-            return value;
-        }
-
-        @Override
-        public String toString() {
-            return "ByteValue{" +
-                    "value=" + value +
-                    '}';
-        }
+    public char getCharValue() {
+        assert type == Type.CHAR;
+        return (char) value;
     }
 
-    final class BooleanValue implements Value {
-        static final BooleanValue TRUE = new BooleanValue(true);
-        static final BooleanValue FALSE = new BooleanValue(false);
-
-        private final boolean value;
-
-        private BooleanValue(boolean value) {
-            this.value = value;
-        }
-
-        static BooleanValue of(boolean value) {
-            return value ? TRUE : FALSE;
-        }
-
-        public boolean getValue() {
-            return value;
-        }
-
-        @Override
-        public Type getType() {
-            return Type.BOOL;
-        }
-
-        @Override
-        public byte[] serialize() {
-            var buffer = ByteBuffer.allocate(1 + 1);
-            buffer.put((byte) getType().ordinal());
-            buffer.put(value ? (byte) 1 : (byte) 0);
-            return buffer.array();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof BooleanValue)) return false;
-
-            BooleanValue that = (BooleanValue) o;
-
-            return value == that.value;
-        }
-
-        @Override
-        public int hashCode() {
-            return (value ? 1 : 0);
-        }
-
-        @Override
-        public String toString() {
-            return "BooleanValue{" +
-                    "value=" + value +
-                    '}';
-        }
+    public byte getByteValue() {
+        assert type == Type.BYTE;
+        return (byte) value;
     }
 
-    final class DoubleValue implements Value {
-        private final double value;
-
-        DoubleValue(double value) {
-            this.value = value;
-        }
-
-        public double getValue() {
-            return value;
-        }
-
-        @Override
-        public Type getType() {
-            return Type.DOUBLE;
-        }
-
-        @Override
-        public byte[] serialize() {
-            var buffer = ByteBuffer.allocate(1 + Double.BYTES);
-            buffer.put((byte) getType().ordinal());
-            buffer.putDouble(value);
-            return buffer.array();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof DoubleValue)) return false;
-
-            DoubleValue that = (DoubleValue) o;
-
-            return Double.compare(that.value, value) == 0;
-        }
-
-        @Override
-        public int hashCode() {
-            long temp = Double.doubleToLongBits(value);
-            return (int) (temp ^ (temp >>> 32));
-        }
-
-        @Override
-        public String toString() {
-            return "DoubleValue{" +
-                    "value=" + value +
-                    '}';
-        }
+    public boolean getBoolValue() {
+        assert type == Type.BOOL;
+        return value != 0L;
     }
 
-    final class FloatValue implements Value {
-        private final float value;
+    public float getFloatValue() {
+        assert type == Type.FLOAT;
+        return Float.intBitsToFloat((int) value);
+    }
 
-        FloatValue(float value) {
-            this.value = value;
-        }
+    public double getDoublesValue() {
+        assert type == Type.DOUBLE;
+        return Double.longBitsToDouble(value);
+    }
 
-        public float getValue() {
-            return value;
-        }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
 
-        @Override
-        public Type getType() {
-            return Type.FLOAT;
-        }
+        Value value = (Value) o;
 
-        @Override
-        public byte[] serialize() {
-            var buffer = ByteBuffer.allocate(1 + Float.BYTES);
-            buffer.put((byte) getType().ordinal());
-            buffer.putFloat(value);
-            return buffer.array();
-        }
+        if (this.value != value.value) return false;
+        return type == value.type;
+    }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof FloatValue)) return false;
+    @Override
+    public int hashCode() {
+        int result = type.hashCode();
+        result = 31 * result + (int) (value ^ (value >>> 32));
+        return result;
+    }
 
-            FloatValue that = (FloatValue) o;
-
-            return Float.compare(that.value, value) == 0;
-        }
-
-        @Override
-        public int hashCode() {
-            return (value == +0.0f ? 0 : Float.floatToIntBits(value));
-        }
-
-        @Override
-        public String toString() {
-            return "FloatValue{" +
-                    "value=" + value +
-                    '}';
-        }
+    @Override
+    public String toString() {
+        return "Value2{" +
+                "type=" + type +
+                ", value=" + value +
+                '}';
     }
 }
