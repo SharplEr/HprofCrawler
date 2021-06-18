@@ -57,7 +57,6 @@ public final class Main implements Callable<Integer> {
 
         long startTime = System.currentTimeMillis();
         parser.parse(file);
-
         long finishTime = System.currentTimeMillis();
 
         System.out.printf(
