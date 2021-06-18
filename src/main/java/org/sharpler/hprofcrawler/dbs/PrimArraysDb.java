@@ -17,7 +17,7 @@ public class PrimArraysDb implements AutoCloseable {
 
     public PrimArraysDb(DB db) {
         this.db = db;
-        writer = new BatchWriter(db::createWriteBatch, db::write, 1000);
+        writer = new BatchWriter(db::createWriteBatch, db::write, 10000);
     }
 
     public final void put(PrimArray primArray) {

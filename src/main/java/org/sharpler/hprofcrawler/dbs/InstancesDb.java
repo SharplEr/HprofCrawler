@@ -1,14 +1,14 @@
 package org.sharpler.hprofcrawler.dbs;
 
-import java.io.IOException;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Predicate;
-
 import org.iq80.leveldb.DB;
 import org.iq80.leveldb.DBIterator;
 import org.sharpler.hprofcrawler.Utils;
 import org.sharpler.hprofcrawler.entries.InstanceEntry;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Predicate;
 
 public final class InstancesDb implements AutoCloseable {
     private final DB db;
@@ -16,23 +16,19 @@ public final class InstancesDb implements AutoCloseable {
 
     public InstancesDb(DB db) {
         this.db = db;
-        writer = new BatchWriter(db::createWriteBatch, db::write, 1000);
+        writer = new BatchWriter(db::createWriteBatch, db::write, 10000);
     }
 
     public void put(long classId, long objectId, InstanceEntry entry) {
         writer.add(
                 Utils.serializeTwoLong(classId, objectId),
-                Utils.serialize(entry)
+                entry.serialize()
         );
     }
 
     public Optional<InstanceEntry> find(long classId, long objectId) {
         return Optional.ofNullable(db.get(Utils.serializeTwoLong(classId, objectId)))
-                .map(InstancesDb::deserialize);
-    }
-
-    private static InstanceEntry deserialize(byte[] blob) {
-        return Utils.deserialize(blob, InstanceEntry.class);
+                .map(InstanceEntry::deserialize);
     }
 
     public void scan(long classId, Predicate<? super InstanceEntry> consumer) {
@@ -44,7 +40,7 @@ public final class InstancesDb implements AutoCloseable {
                     break;
                 }
 
-                if (consumer.test(Utils.deserialize(entry.getValue(), InstanceEntry.class))) {
+                if (consumer.test(InstanceEntry.deserialize(entry.getValue()))) {
                     break;
                 }
             }

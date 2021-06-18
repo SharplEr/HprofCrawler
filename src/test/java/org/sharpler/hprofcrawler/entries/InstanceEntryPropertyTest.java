@@ -7,7 +7,6 @@ import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.jupiter.api.Assertions;
 import org.junit.runner.RunWith;
-import org.sharpler.hprofcrawler.Utils;
 import org.sharpler.hprofcrawler.ValuesGenerator;
 import org.sharpler.hprofcrawler.parser.Value;
 
@@ -17,6 +16,6 @@ public class InstanceEntryPropertyTest {
     public void serialize(long objectId, long classId, List<@From(ValuesGenerator.class) Value> fields) {
         InstanceEntry entry = new InstanceEntry(objectId, classId, fields);
 
-        Assertions.assertEquals(entry, Utils.deserialize(Utils.serialize(entry), InstanceEntry.class));
+        Assertions.assertEquals(entry, InstanceEntry.deserialize(entry.serialize()));
     }
 }

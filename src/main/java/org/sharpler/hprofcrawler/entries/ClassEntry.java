@@ -2,38 +2,22 @@ package org.sharpler.hprofcrawler.entries;
 
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 public final class ClassEntry {
-    @JsonProperty("name")
     private final String name;
-    @JsonProperty("id")
     private final long id;
-    @JsonProperty("superClassId")
     private final long superClassId;
-    @JsonProperty("instanceSize")
     private final int instanceSize;
-    @JsonProperty("fields")
     private final List<FieldEntry> fields;
-    @JsonProperty("count")
     private final int count;
 
-    @JsonCreator
     public ClassEntry(
-            @JsonProperty("name")
-                    String name,
-            @JsonProperty("id")
-                    long id,
-            @JsonProperty("superClassId")
-                    long superClassId,
-            @JsonProperty("instanceSize")
-                    int instanceSize,
-            @JsonProperty("fields")
-                    List<FieldEntry> fields,
-            @JsonProperty("count")
-                    int count)
-    {
+            String name,
+            long id,
+            long superClassId,
+            int instanceSize,
+            List<FieldEntry> fields,
+            int count
+    ) {
         this.name = name;
         this.id = id;
         this.superClassId = superClassId;

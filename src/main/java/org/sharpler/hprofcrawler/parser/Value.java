@@ -1,24 +1,7 @@
 package org.sharpler.hprofcrawler.parser;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import java.nio.ByteBuffer;
 
-@JsonTypeInfo(
-        use = JsonTypeInfo.Id.NAME,
-        include = JsonTypeInfo.As.PROPERTY,
-        property = "type")
-@JsonSubTypes({
-        @JsonSubTypes.Type(value = Value.LongValue.class, name = "long"),
-        @JsonSubTypes.Type(value = Value.IntValue.class, name = "int"),
-        @JsonSubTypes.Type(value = Value.ShortValue.class, name = "short"),
-        @JsonSubTypes.Type(value = Value.ByteValue.class, name = "byte"),
-        @JsonSubTypes.Type(value = Value.CharValue.class, name = "char"),
-        @JsonSubTypes.Type(value = Value.BooleanValue.class, name = "bool"),
-        @JsonSubTypes.Type(value = Value.DoubleValue.class, name = "double"),
-        @JsonSubTypes.Type(value = Value.FloatValue.class, name = "float")
-})
 public interface Value {
     static LongValue ofLong(long value, boolean isObject) {
         return new LongValue(value, isObject);
@@ -54,14 +37,28 @@ public interface Value {
 
     Type getType();
 
+    byte[] serialize();
+
+    static Value deserialize(ByteBuffer buffer) {
+        return switch (Type.VALUES.get(buffer.get())) {
+            case OBJ -> ofLong(buffer.getLong(), true);
+            case BOOL -> ofBool(buffer.get() == 1);
+            case CHAR -> ofChar(buffer.getChar());
+            case FLOAT -> ofFloat(buffer.getFloat());
+            case DOUBLE -> ofDouble(buffer.getDouble());
+            case BYTE -> ByteValue.of(buffer.get());
+            case SHORT -> ofShort(buffer.getShort());
+            case INT -> ofInt(buffer.getInt());
+            case LONG -> ofLong(buffer.getLong(), false);
+        };
+    }
+
+
     final class LongValue implements Value {
-        @JsonProperty("value")
         private final long value;
-        @JsonProperty("isObject")
         private final boolean isObject;
 
-        @JsonCreator
-        public LongValue(@JsonProperty("value") long value, @JsonProperty("isObject") boolean isObject) {
+        LongValue(long value, boolean isObject) {
             this.value = value;
             this.isObject = isObject;
         }
@@ -69,6 +66,14 @@ public interface Value {
         @Override
         public Type getType() {
             return isObject ? Type.OBJ : Type.LONG;
+        }
+
+        @Override
+        public byte[] serialize() {
+            var buffer = ByteBuffer.allocate(1 + Long.BYTES);
+            buffer.put((byte) getType().ordinal());
+            buffer.putLong(value);
+            return buffer.array();
         }
 
         public long getValue() {
@@ -103,11 +108,9 @@ public interface Value {
     }
 
     final class IntValue implements Value {
-        @JsonProperty("value")
         private final int value;
 
-        @JsonCreator
-        public IntValue(@JsonProperty("value") int value) {
+        IntValue(int value) {
             this.value = value;
         }
 
@@ -119,6 +122,14 @@ public interface Value {
         @Override
         public Type getType() {
             return Type.INT;
+        }
+
+        @Override
+        public byte[] serialize() {
+            var buffer = ByteBuffer.allocate(1 + Integer.BYTES);
+            buffer.put((byte) getType().ordinal());
+            buffer.putInt(value);
+            return buffer.array();
         }
 
         @Override
@@ -145,11 +156,9 @@ public interface Value {
     }
 
     final class ShortValue implements Value {
-        @JsonProperty("value")
         private final short value;
 
-        @JsonCreator
-        public ShortValue(@JsonProperty("value") short value) {
+        ShortValue(short value) {
             this.value = value;
         }
 
@@ -160,6 +169,14 @@ public interface Value {
         @Override
         public Type getType() {
             return Type.SHORT;
+        }
+
+        @Override
+        public byte[] serialize() {
+            var buffer = ByteBuffer.allocate(1 + Short.BYTES);
+            buffer.put((byte) getType().ordinal());
+            buffer.putShort(value);
+            return buffer.array();
         }
 
         @Override
@@ -186,11 +203,9 @@ public interface Value {
     }
 
     final class CharValue implements Value {
-        @JsonProperty("value")
         private final char value;
 
-        @JsonCreator
-        public CharValue(@JsonProperty("value") char value) {
+        CharValue(char value) {
             this.value = value;
         }
 
@@ -201,6 +216,14 @@ public interface Value {
         @Override
         public Type getType() {
             return Type.CHAR;
+        }
+
+        @Override
+        public byte[] serialize() {
+            var buffer = ByteBuffer.allocate(1 + Character.BYTES);
+            buffer.put((byte) getType().ordinal());
+            buffer.putChar(value);
+            return buffer.array();
         }
 
         @Override
@@ -235,15 +258,13 @@ public interface Value {
             }
         }
 
-        @JsonProperty("value")
         private final byte value;
 
         private ByteValue(byte value) {
             this.value = value;
         }
 
-        @JsonCreator
-        public static ByteValue of(@JsonProperty("value") byte value) {
+        static ByteValue of(byte value) {
             return cache[value + 128];
         }
 
@@ -254,6 +275,14 @@ public interface Value {
         @Override
         public Type getType() {
             return Type.BYTE;
+        }
+
+        @Override
+        public byte[] serialize() {
+            var buffer = ByteBuffer.allocate(1 + Byte.BYTES);
+            buffer.put((byte) getType().ordinal());
+            buffer.put(value);
+            return buffer.array();
         }
 
         @Override
@@ -280,18 +309,16 @@ public interface Value {
     }
 
     final class BooleanValue implements Value {
-        public static final BooleanValue TRUE = new BooleanValue(true);
-        public static final BooleanValue FALSE = new BooleanValue(false);
+        static final BooleanValue TRUE = new BooleanValue(true);
+        static final BooleanValue FALSE = new BooleanValue(false);
 
-        @JsonProperty("value")
         private final boolean value;
 
         private BooleanValue(boolean value) {
             this.value = value;
         }
 
-        @JsonCreator
-        public static BooleanValue of(@JsonProperty("value") boolean value) {
+        static BooleanValue of(boolean value) {
             return value ? TRUE : FALSE;
         }
 
@@ -302,6 +329,14 @@ public interface Value {
         @Override
         public Type getType() {
             return Type.BOOL;
+        }
+
+        @Override
+        public byte[] serialize() {
+            var buffer = ByteBuffer.allocate(1 + 1);
+            buffer.put((byte) getType().ordinal());
+            buffer.put(value ? (byte) 1 : (byte) 0);
+            return buffer.array();
         }
 
         @Override
@@ -328,11 +363,9 @@ public interface Value {
     }
 
     final class DoubleValue implements Value {
-        @JsonProperty("value")
         private final double value;
 
-        @JsonCreator
-        public DoubleValue(@JsonProperty("value") double value) {
+        DoubleValue(double value) {
             this.value = value;
         }
 
@@ -343,6 +376,14 @@ public interface Value {
         @Override
         public Type getType() {
             return Type.DOUBLE;
+        }
+
+        @Override
+        public byte[] serialize() {
+            var buffer = ByteBuffer.allocate(1 + Double.BYTES);
+            buffer.put((byte) getType().ordinal());
+            buffer.putDouble(value);
+            return buffer.array();
         }
 
         @Override
@@ -370,11 +411,9 @@ public interface Value {
     }
 
     final class FloatValue implements Value {
-        @JsonProperty("value")
         private final float value;
 
-        @JsonCreator
-        public FloatValue(@JsonProperty("value") float value) {
+        FloatValue(float value) {
             this.value = value;
         }
 
@@ -385,6 +424,14 @@ public interface Value {
         @Override
         public Type getType() {
             return Type.FLOAT;
+        }
+
+        @Override
+        public byte[] serialize() {
+            var buffer = ByteBuffer.allocate(1 + Float.BYTES);
+            buffer.put((byte) getType().ordinal());
+            buffer.putFloat(value);
+            return buffer.array();
         }
 
         @Override
@@ -399,7 +446,7 @@ public interface Value {
 
         @Override
         public int hashCode() {
-            return (value != +0.0f ? Float.floatToIntBits(value) : 0);
+            return (value == +0.0f ? 0 : Float.floatToIntBits(value));
         }
 
         @Override
