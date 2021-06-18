@@ -181,6 +181,14 @@ public final class FindPrimArrayWithTooWideRange implements
             result = 31 * result + enough.hashCode();
             return result;
         }
+
+        @Override
+        public String toString() {
+            return "RangeShift{" +
+                    "origin=" + origin +
+                    ", enough=" + enough +
+                    '}';
+        }
     }
 }
 
