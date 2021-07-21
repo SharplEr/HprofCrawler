@@ -5,7 +5,10 @@ import java.util.OptionalLong;
 import org.iq80.leveldb.DB;
 import org.sharpler.hprofcrawler.Utils;
 
-public final class Object2ClassDb implements AutoCloseable {
+/**
+ * Map: objectId->classId.
+ */
+public final class Object2ClassDb implements Database {
     private final DB db;
     private final BatchWriter writer;
 
@@ -23,6 +26,7 @@ public final class Object2ClassDb implements AutoCloseable {
         return classId == null ? OptionalLong.empty() : OptionalLong.of(Utils.deserializeLong(classId));
     }
 
+    @Override
     public void compact() {
         writer.flush();
         db.compactRange(Utils.serializeLong(0L), Utils.serializeLong(-1L));

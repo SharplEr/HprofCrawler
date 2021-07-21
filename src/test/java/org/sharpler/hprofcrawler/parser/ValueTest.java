@@ -9,10 +9,6 @@ import java.util.stream.Stream;
 public class ValueTest {
     @Test
     public void testEquals() {
-        Stream.of(
-                Value.class.getAnnotation(JsonSubTypes.class).value()
-        ).forEach(
-                x -> EqualsVerifier.forClass(x.value()).verify()
-        );
+        EqualsVerifier.forClass(Value.class).verify();
     }
 }

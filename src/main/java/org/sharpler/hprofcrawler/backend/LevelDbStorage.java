@@ -6,6 +6,7 @@ import java.util.function.Predicate;
 
 import org.sharpler.hprofcrawler.Utils;
 import org.sharpler.hprofcrawler.dbs.InstancesDb;
+import org.sharpler.hprofcrawler.dbs.NamesDb;
 import org.sharpler.hprofcrawler.dbs.Object2ClassDb;
 import org.sharpler.hprofcrawler.dbs.ObjectArraysDb;
 import org.sharpler.hprofcrawler.dbs.PrimArraysDb;
@@ -13,6 +14,8 @@ import org.sharpler.hprofcrawler.parser.PrimArray;
 import org.sharpler.hprofcrawler.parser.Type;
 import org.sharpler.hprofcrawler.views.InstanceView;
 import org.sharpler.hprofcrawler.views.ObjectArrayView;
+
+import javax.annotation.Nullable;
 
 public final class LevelDbStorage implements Storage, AutoCloseable {
     private final Index index;
@@ -22,18 +25,22 @@ public final class LevelDbStorage implements Storage, AutoCloseable {
     private final PrimArraysDb primArraysDb;
 
     private final ObjectArraysDb objectArraysDb;
+    private final NamesDb namesDb;
 
     public LevelDbStorage(
             Index index,
             Object2ClassDb object2Class,
-            InstancesDb instances, PrimArraysDb primArraysDb,
-            ObjectArraysDb objectArraysDb)
+            InstancesDb instances,
+            PrimArraysDb primArraysDb,
+            ObjectArraysDb objectArraysDb,
+            NamesDb namesDb)
     {
         this.index = index;
         this.object2Class = object2Class;
         this.instances = instances;
         this.primArraysDb = primArraysDb;
         this.objectArraysDb = objectArraysDb;
+        this.namesDb = namesDb;
     }
 
     @Override
@@ -70,6 +77,12 @@ public final class LevelDbStorage implements Storage, AutoCloseable {
                 elementsClassId,
                 x -> consumer.test(new ObjectArrayView(x, index.findClassView(x.getElementsClassId())))
         );
+    }
+
+    @Nullable
+    @Override
+    public String resolveName(long id) {
+        return namesDb.find(id);
     }
 
     @Override

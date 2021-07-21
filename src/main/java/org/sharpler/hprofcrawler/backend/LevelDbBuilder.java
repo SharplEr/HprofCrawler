@@ -6,11 +6,13 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import org.sharpler.hprofcrawler.Utils;
 import org.sharpler.hprofcrawler.api.Progress;
+import org.sharpler.hprofcrawler.dbs.ClassInfoDb;
+import org.sharpler.hprofcrawler.dbs.Database;
 import org.sharpler.hprofcrawler.dbs.InstancesDb;
+import org.sharpler.hprofcrawler.dbs.NamesDb;
 import org.sharpler.hprofcrawler.dbs.Object2ClassDb;
 import org.sharpler.hprofcrawler.dbs.ObjectArraysDb;
 import org.sharpler.hprofcrawler.dbs.PrimArraysDb;
-import org.sharpler.hprofcrawler.entries.FieldEntry;
 import org.sharpler.hprofcrawler.entries.InstanceEntry;
 import org.sharpler.hprofcrawler.parser.Constant;
 import org.sharpler.hprofcrawler.parser.DummyHandler;
@@ -23,17 +25,16 @@ import org.sharpler.hprofcrawler.parser.Value;
 import org.sharpler.hprofcrawler.views.ClassView;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public final class LevelDbBuilder extends DummyHandler implements BackendBuilder {
 
     private final Long2ObjectOpenHashMap<ClassView> classes = new Long2ObjectOpenHashMap<>();
-    private final Long2ObjectOpenHashMap<String> names = new Long2ObjectOpenHashMap<>();
 
-    private final Long2ObjectOpenHashMap<String> classesNames = new Long2ObjectOpenHashMap<>();
+    private final Long2LongOpenHashMap classesNames = new Long2LongOpenHashMap();
 
     private final Long2LongOpenHashMap objectArrayCount = new Long2LongOpenHashMap();
 
@@ -46,15 +47,24 @@ public final class LevelDbBuilder extends DummyHandler implements BackendBuilder
 
     private final Object2LongOpenHashMap<Type> primArrayCount = new Object2LongOpenHashMap<>();
 
+    private final NamesDb namesDb;
+
+    private final ClassInfoDb classInfoDb;
+
     private LevelDbBuilder(
             Object2ClassDb object2ClassDb,
             InstancesDb instancesDb,
             PrimArraysDb primArraysDb,
-            ObjectArraysDb objectArraysDb) {
+            ObjectArraysDb objectArraysDb,
+            NamesDb namesDb,
+            ClassInfoDb classInfoDb
+    ) {
         this.object2ClassDb = object2ClassDb;
         this.instancesDb = instancesDb;
         this.primArraysDb = primArraysDb;
         this.objectArraysDb = objectArraysDb;
+        this.namesDb = namesDb;
+        this.classInfoDb = classInfoDb;
     }
 
     public static LevelDbBuilder of(Path dir) {
@@ -63,22 +73,20 @@ public final class LevelDbBuilder extends DummyHandler implements BackendBuilder
                 () -> new Object2ClassDb(Utils.openDb(dir.resolve("object2Class"))),
                 () -> new InstancesDb(Utils.openDb(dir.resolve("instances"))),
                 () -> new PrimArraysDb(Utils.openDb(dir.resolve("prim_arrays"))),
-                () -> new ObjectArraysDb(Utils.openDb(dir.resolve("object_arrays")))
+                () -> new ObjectArraysDb(Utils.openDb(dir.resolve("object_arrays"))),
+                () -> new NamesDb(Utils.openDb(dir.resolve("names"))),
+                () -> new ClassInfoDb(Utils.openDb(dir.resolve("classes")))
         );
-    }
-
-    public void addName(long id, String name) {
-        names.put(id, name);
     }
 
     @Override
     public void stringInUTF8(long id, String data) {
-        names.put(id, data);
+        namesDb.put(id, data);
     }
 
     @Override
     public void loadClass(int classSerialNum, long classObjId, int stackTraceSerialNum, long classNameStringId) {
-        classesNames.put(classObjId, Objects.requireNonNull(names.get(classNameStringId)));
+        classesNames.put(classObjId, classNameStringId);
     }
 
     @Override
@@ -94,20 +102,16 @@ public final class LevelDbBuilder extends DummyHandler implements BackendBuilder
             int instanceSize,
             Constant[] constants,
             Static[] statics,
-            InstanceField[] instanceFields) {
-        String className = Objects.requireNonNull(classesNames.get(classObjId));
-
+            InstanceField[] instanceFields
+    ) {
         classes.put(
                 classObjId,
-                new ClassView(
-                        className,
+                ClassView.create(
+                        classesNames.get(classObjId),
                         classObjId,
                         superClassObjId,
                         instanceSize,
-                        Stream.of(instanceFields)
-                                .map(x -> new FieldEntry(Objects.requireNonNull(names.get(x.fieldNameStringId)),
-                                        x.type))
-                                .collect(Collectors.toList())
+                        new ArrayList<>(Arrays.asList(instanceFields))
                 )
         );
     }
@@ -158,25 +162,22 @@ public final class LevelDbBuilder extends DummyHandler implements BackendBuilder
             unmarked.removeAll(marked);
         }
 
+        classes.long2ObjectEntrySet().forEach(e-> classInfoDb.put(e.getLongKey(), e.getValue()));
+
         return new Index(classes, primArrayCount, objectArrayCount);
     }
 
+
     public LevelDbStorage buildStorage(Index index, Progress progress) {
-        object2ClassDb.compact();
-        progress.setValue(25);
-        instancesDb.compact();
-        progress.setValue(50);
-        primArraysDb.compact();
-        progress.setValue(75);
-        objectArraysDb.compact();
-        progress.done();
+        Database.compactAll(progress, object2ClassDb, instancesDb, primArraysDb, objectArraysDb, namesDb, classInfoDb);
 
         return new LevelDbStorage(
                 index,
                 object2ClassDb,
                 instancesDb,
                 primArraysDb,
-                objectArraysDb
+                objectArraysDb,
+                namesDb
         );
     }
 

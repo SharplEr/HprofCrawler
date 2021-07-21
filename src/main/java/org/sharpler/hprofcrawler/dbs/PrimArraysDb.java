@@ -1,7 +1,9 @@
 package org.sharpler.hprofcrawler.dbs;
 
+import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import org.iq80.leveldb.DB;
 import org.iq80.leveldb.DBIterator;
+import org.iq80.leveldb.ReadOptions;
 import org.sharpler.hprofcrawler.Utils;
 import org.sharpler.hprofcrawler.parser.PrimArray;
 import org.sharpler.hprofcrawler.parser.Type;
@@ -11,7 +13,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-public class PrimArraysDb implements AutoCloseable {
+/**
+ * ({@link Type}, objectId) -> {@link PrimArray}.
+ */
+public class PrimArraysDb implements Database {
     private final DB db;
     private final BatchWriter writer;
 
@@ -51,6 +56,21 @@ public class PrimArraysDb implements AutoCloseable {
         }
     }
 
+    public final Object2LongOpenHashMap<Type> reloadIndex() {
+        var result = new Object2LongOpenHashMap<Type>(Type.VALUES.size());
+        try (DBIterator iterator = db.iterator(new ReadOptions().fillCache(false))) {
+            iterator.seekToFirst();
+            while (iterator.hasNext()) {
+                result.addTo(Type.VALUES.get(Math.toIntExact(Utils.deserializeLong(iterator.next().getKey()))), 1);
+            }
+
+            return result;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public final void compact() {
         writer.flush();
         db.compactRange(Utils.serializeTwoLong(0L, 0L), Utils.serializeTwoLong(-1L, -1L));

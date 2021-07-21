@@ -62,18 +62,12 @@ public final class InstanceEntry {
                 '}';
     }
 
-    private static void addAll(ByteArrayList list, byte[] bytes) {
-        for (var x : bytes) {
-            list.add(x);
-        }
-    }
-
     public byte[] serialize() {
         var result = new ByteArrayList();
-        addAll(result, Utils.serializeLong(objectId));
-        addAll(result, Utils.serializeLong(classId));
+        Utils.addAll(result, Utils.serializeLong(objectId));
+        Utils.addAll(result, Utils.serializeLong(classId));
         for (var field : fields) {
-            addAll(result, field.serialize());
+            Utils.addAll(result, field.serialize());
         }
         return result.toByteArray();
     }

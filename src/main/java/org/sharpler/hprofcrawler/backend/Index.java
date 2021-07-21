@@ -1,12 +1,15 @@
 package org.sharpler.hprofcrawler.backend;
 
-import java.util.Objects;
-
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
+import org.sharpler.hprofcrawler.dbs.ClassInfoDb;
+import org.sharpler.hprofcrawler.dbs.ObjectArraysDb;
+import org.sharpler.hprofcrawler.dbs.PrimArraysDb;
 import org.sharpler.hprofcrawler.parser.Type;
 import org.sharpler.hprofcrawler.views.ClassView;
+
+import java.util.Objects;
 
 public final class Index {
     private final Long2ObjectOpenHashMap<ClassView> classes;
@@ -18,11 +21,18 @@ public final class Index {
     public Index(
             Long2ObjectOpenHashMap<ClassView> classes,
             Object2LongOpenHashMap<Type> primArrayCount,
-            Long2LongOpenHashMap objectArrayCount)
-    {
+            Long2LongOpenHashMap objectArrayCount) {
         this.classes = classes;
         this.primArrayCount = primArrayCount;
         this.objectArrayCount = objectArrayCount;
+    }
+
+    public static Index reload(PrimArraysDb primArraysDb, ObjectArraysDb objectArraysDb, ClassInfoDb classInfoDb) {
+        return new Index(
+                classInfoDb.reloadIndex(),
+                primArraysDb.reloadIndex(),
+                objectArraysDb.reloadIndex()
+        );
     }
 
     public ClassView findClassView(long id) {

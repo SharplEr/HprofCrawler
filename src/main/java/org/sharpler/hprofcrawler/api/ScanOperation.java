@@ -8,7 +8,7 @@ import org.sharpler.hprofcrawler.views.ClassView;
 import org.sharpler.hprofcrawler.views.InstanceView;
 
 public interface ScanOperation<T> {
-    public Stream<ClassView> classFilter(Collection<ClassView> classes);
+    Stream<ClassView> classFilter(Collection<ClassView> classes);
 
     Predicate<InstanceView> getConsumer(ClassView clazz);
 
