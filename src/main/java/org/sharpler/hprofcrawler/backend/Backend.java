@@ -1,16 +1,18 @@
 package org.sharpler.hprofcrawler.backend;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import org.sharpler.hprofcrawler.api.ObjectArrayScanOperation;
-import org.sharpler.hprofcrawler.api.PrimArrayScanOperation;
+import org.sharpler.hprofcrawler.api.ClassFilter;
+import org.sharpler.hprofcrawler.api.Collector;
 import org.sharpler.hprofcrawler.api.Progress;
-import org.sharpler.hprofcrawler.api.ScanOperation;
+import org.sharpler.hprofcrawler.parser.PrimArray;
 import org.sharpler.hprofcrawler.parser.Type;
 import org.sharpler.hprofcrawler.views.ClassView;
 import org.sharpler.hprofcrawler.views.InstanceView;
+import org.sharpler.hprofcrawler.views.ObjectArrayView;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class Backend {
     private final Storage storage;
@@ -33,9 +35,11 @@ public final class Backend {
         return storage.lookupObject(classId, objectId);
     }
 
-    public <T> T scan(ScanOperation<? extends T> operation, Progress progress) {
-        List<ClassView> classes = operation.classFilter(index.getClasses().values())
+    public <T> T scanInstance(ClassFilter filter, Collector<ClassView, InstanceView, T> collector, Progress progress) {
+        var classes = index.getClasses().values()
+                .stream()
                 .filter(ClassView::isNotEmpty)
+                .filter(x -> filter.filterId(x.getId()) && filter.filterClass(x))
                 .distinct()
                 .collect(Collectors.toList());
 
@@ -43,38 +47,53 @@ public final class Backend {
         long current = 0L;
 
         for (ClassView classView : classes) {
-            storage.scanClass(classView.getId(), operation.getConsumer(classView));
+            var consumer = collector.getConsumer(classView);
+            storage.scanClass(classView.getId(), consumer);
+            consumer.finish();
 
             current += classView.getCount();
             progress.setValue(Math.toIntExact(current * 100L / total));
         }
 
         progress.done();
-        return operation.buildResult();
+        return collector.buildResult(storage::resolveName);
     }
 
-    public <T> T scanPrimArray(PrimArrayScanOperation<? extends T> operation, Progress progress) {
-        List<Type> types = operation.types()
+    public <T> T scanPrimArray(
+            Set<Type> includedTypes,
+            Collector<Type, PrimArray, ? extends T> operation,
+            Progress progress
+    ) {
+        var types = Type.VALUES.stream()
                 .filter(x -> index.getPrimArrayCount(x) > 0)
-                .distinct()
+                .filter(includedTypes::contains)
                 .collect(Collectors.toList());
 
         long total = types.stream().mapToLong(index::getPrimArrayCount).sum();
         long current = 0L;
 
         for (Type type : types) {
-            storage.scanPrimArray(type, operation.getConsumer(type));
+            var consumer = operation.getConsumer(type);
+            storage.scanPrimArray(type, consumer);
+            consumer.finish();
 
             current += index.getPrimArrayCount(type);
             progress.setValue(Math.toIntExact(current * 100L / total));
         }
         progress.done();
-        return operation.buildResult();
+        return operation.buildResult(storage::resolveName);
     }
 
-    public <T> T scanObjectArray(ObjectArrayScanOperation<? extends T> operation, Progress progress) {
-        List<ClassView> classes = operation.classFilter(index.getClasses().values())
+    public <T> T scanObjectArray(
+            ClassFilter filter,
+            Collector<ClassView, ObjectArrayView, ? extends T> operation,
+            Progress progress
+    ) {
+        List<ClassView> classes = index.getClasses().values()
+                .stream()
                 .filter(x -> index.getObjectArrayCount(x.getId()) > 0)
+                .filter(x -> filter.filterId(x.getId()) && filter.filterClass(x))
+                .distinct()
                 .collect(Collectors.toList());
 
         long total = classes.stream()
@@ -90,6 +109,6 @@ public final class Backend {
             progress.setValue(Math.toIntExact(current * 100L / total));
         }
         progress.done();
-        return operation.buildResult();
+        return operation.buildResult(storage::resolveName);
     }
 }

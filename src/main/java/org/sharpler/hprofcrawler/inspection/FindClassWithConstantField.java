@@ -1,52 +1,40 @@
 package org.sharpler.hprofcrawler.inspection;
 
-import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
-import it.unimi.dsi.fastutil.longs.Long2ObjectMaps;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import org.sharpler.hprofcrawler.api.ScanOperation;
+import org.sharpler.hprofcrawler.api.Collector;
+import org.sharpler.hprofcrawler.api.InstanceConsumer;
 import org.sharpler.hprofcrawler.parser.Value;
 import org.sharpler.hprofcrawler.views.ClassView;
 import org.sharpler.hprofcrawler.views.InstanceView;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.*;
-import java.util.function.Predicate;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.LongFunction;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-public final class FindClassWithConstantField implements ScanOperation<List<FindClassWithConstantField.Info>> {
-
-    private final int minimalInstancesCount;
+public final class FindClassWithConstantField implements Collector<ClassView, InstanceView, List<FindClassWithConstantField.Stat>> {
 
     private final Long2ObjectOpenHashMap<InfoBuilder> builders = new Long2ObjectOpenHashMap<>();
 
-    public FindClassWithConstantField(int minimalInstancesCount) {
-        assert minimalInstancesCount > 1;
-        this.minimalInstancesCount = minimalInstancesCount;
+    public FindClassWithConstantField() {
     }
 
     @Override
-    public Stream<ClassView> classFilter(Collection<ClassView> classes) {
-        return classes.stream()
-                .filter(x -> x.getCount() >= minimalInstancesCount)
-                .filter(x -> !x.getFields().isEmpty());
-    }
-
-    @Override
-    public Predicate<InstanceView> getConsumer(ClassView clazz) {
+    public InstanceConsumer<InstanceView> getConsumer(ClassView clazz) {
         return builders.computeIfAbsent(clazz.getName(), k -> new InfoBuilder(clazz));
     }
 
     @Override
-    public List<Info> buildResult() {
+    public List<Stat> buildResult(LongFunction<String> nameResolver) {
         return builders.values().stream()
-                .map(InfoBuilder::build)
-                .filter(x -> !x.getConstants().isEmpty())
+                .filter(x -> x.valuesBase != null)
+                .map(x -> x.build(nameResolver))
                 .collect(Collectors.toList());
     }
 
-    private static class InfoBuilder implements Predicate<InstanceView> {
+    private static class InfoBuilder implements InstanceConsumer<InstanceView> {
         private final boolean[] isUnique;
         @Nullable
         private List<Value> valuesBase = null;
@@ -85,9 +73,9 @@ public final class FindClassWithConstantField implements ScanOperation<List<Find
             return hasNoUnique;
         }
 
-        public final Info build() {
+        public final Stat build(LongFunction<String> nameResolver) {
             if (valuesBase == null) {
-                return new Info(classView, Long2ObjectMaps.emptyMap());
+                throw new IllegalStateException();
             }
             Long2ObjectOpenHashMap<Value> constants = new Long2ObjectOpenHashMap<>();
 
@@ -97,36 +85,32 @@ public final class FindClassWithConstantField implements ScanOperation<List<Find
                 }
             }
 
-            return new Info(
-                    classView,
-                    constants
+            return new Stat(
+                    nameResolver.apply(classView.getId()),
+                    constants.long2ObjectEntrySet().stream()
+                            .map(e -> new FieldInfo(nameResolver.apply(e.getLongKey()), e.getValue()))
+                            .collect(Collectors.toList())
             );
         }
     }
 
-    public static final class Info {
-        private final ClassView classView;
-        private final Long2ObjectMap<Value> constants;
+    public static final class Stat {
+        private final String name;
+        private final List<FieldInfo> constants;
 
-        public Info(ClassView classView, Long2ObjectMap<Value> constants) {
-            this.classView = classView;
+        public Stat(String name, List<FieldInfo> constants) {
+            this.name = name;
             this.constants = constants;
         }
+    }
 
-        public ClassView getClassView() {
-            return classView;
-        }
+    public static final class FieldInfo {
+        private final String fieldName;
+        private final Value value;
 
-        public Long2ObjectMap<Value> getConstants() {
-            return constants;
-        }
-
-        @Override
-        public String toString() {
-            return "Info{" +
-                    "classView=" + classView +
-                    ", constants=" + constants +
-                    '}';
+        public FieldInfo(String fieldName, Value value) {
+            this.fieldName = fieldName;
+            this.value = value;
         }
     }
 }

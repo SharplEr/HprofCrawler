@@ -1,32 +1,29 @@
 package org.sharpler.hprofcrawler.inspection;
 
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
-import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
-import org.sharpler.hprofcrawler.api.ObjectArrayScanOperation;
-import org.sharpler.hprofcrawler.dbs.NamesDb;
+import org.sharpler.hprofcrawler.api.Collector;
+import org.sharpler.hprofcrawler.api.InstanceConsumer;
 import org.sharpler.hprofcrawler.views.ClassView;
 import org.sharpler.hprofcrawler.views.ObjectArrayView;
 
-import java.util.Collection;
-import java.util.function.Predicate;
-import java.util.stream.Stream;
+import java.util.List;
+import java.util.function.LongFunction;
+import java.util.stream.Collectors;
 
-public final class FindSparseArrays implements ObjectArrayScanOperation<Long2LongOpenHashMap> {
+public final class FindSparseArrays implements Collector<ClassView, ObjectArrayView, List<FindSparseArrays.Stat>> {
     private final Long2LongOpenHashMap stats = new Long2LongOpenHashMap();
 
     @Override
-    public Stream<ClassView> classFilter(Collection<ClassView> classes) {
-        // TODO: restore Void filtering
-        return classes.stream();
-    }
-
-    @Override
-    public Predicate<ObjectArrayView> getConsumer(ClassView clazz) {
+    public InstanceConsumer<ObjectArrayView> getConsumer(ClassView clazz) {
         return x -> {
+            int zeroCount = 0;
             for (long id : x.getArray().getValues()) {
                 if (id == 0) {
-                    stats.addTo(clazz.getName(), 1L);
+                    zeroCount++;
                 }
+            }
+            if (zeroCount > x.getArray().getValues().length / 2) {
+                stats.addTo(clazz.getName(), 1L);
             }
 
             return false;
@@ -34,8 +31,20 @@ public final class FindSparseArrays implements ObjectArrayScanOperation<Long2Lon
     }
 
     @Override
-    public Long2LongOpenHashMap buildResult() {
-        return stats;
+    public List<FindSparseArrays.Stat> buildResult(LongFunction<String> nameResolver) {
+        return stats.long2LongEntrySet().stream()
+                .map(e -> new Stat(nameResolver.apply(e.getLongKey()), e.getLongValue()))
+                .collect(Collectors.toList());
+    }
+
+    public static final class Stat {
+        private final String name;
+        private final long count;
+
+        private Stat(String name, long count) {
+            this.name = name;
+            this.count = count;
+        }
     }
 }
 
