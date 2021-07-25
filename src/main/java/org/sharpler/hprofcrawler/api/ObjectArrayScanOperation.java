@@ -1,5 +1,6 @@
 package org.sharpler.hprofcrawler.api;
 
+import org.sharpler.hprofcrawler.dbs.NamesDb;
 import org.sharpler.hprofcrawler.views.ClassView;
 import org.sharpler.hprofcrawler.views.ObjectArrayView;
 

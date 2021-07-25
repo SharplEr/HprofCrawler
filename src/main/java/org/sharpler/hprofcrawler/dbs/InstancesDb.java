@@ -10,7 +10,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-public final class InstancesDb implements AutoCloseable {
+/**
+ * Map: (classId, objectId) -> {@link InstanceEntry}.
+ */
+public final class InstancesDb implements Database {
     private final DB db;
     private final BatchWriter writer;
 
@@ -50,6 +53,7 @@ public final class InstancesDb implements AutoCloseable {
         }
     }
 
+    @Override
     public void compact() {
         writer.flush();
         db.compactRange(Utils.serializeTwoLong(0L, 0L), Utils.serializeTwoLong(-1L, -1L));

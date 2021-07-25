@@ -716,7 +716,7 @@ public final class HprofParser {
             nextClass = ci.getSuperClassObjId();
             for (InstanceField field : ci.getInstanceFields()) {
                 Value v = null;
-                switch (field.type) {
+                switch (field.getType()) {
                     case OBJ:     // object
                         long vid = readId(idSize, input);
                         v = Value.ofLong(vid, true);

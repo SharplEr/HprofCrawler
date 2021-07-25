@@ -1,51 +1,35 @@
 package org.sharpler.hprofcrawler.views;
 
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import org.sharpler.hprofcrawler.entries.ClassEntry;
-import org.sharpler.hprofcrawler.entries.FieldEntry;
+import org.sharpler.hprofcrawler.parser.InstanceField;
 import org.sharpler.hprofcrawler.parser.Type;
 
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 
 public final class ClassView {
-    private final String name;
+    private final long name;
     private final long id;
     private final long superClassId;
     private final int instanceSize;
-    private final List<FieldEntry> fields;
-
-    private final Object2IntOpenHashMap<String> fieldsIndex;
-
-    private final boolean isFlat;
+    private final List<InstanceField> fields;
 
     private int count = 0;
 
-    public ClassView(String name, long id, long superClassId, int instanceSize, List<FieldEntry> fields) {
+    private ClassView(long name, long id, long superClassId, int instanceSize, int count, List<InstanceField> fields) {
         this.name = name;
         this.id = id;
         this.superClassId = superClassId;
         this.instanceSize = instanceSize;
         this.fields = fields;
-        this.isFlat = fields.stream().noneMatch(x -> x.getType() == Type.OBJ);
-        fieldsIndex = new Object2IntOpenHashMap<>(fields.size());
-
-        fieldsIndex.defaultReturnValue(-1);
-        for (int i = 0; i < fields.size(); i++) {
-            fieldsIndex.put(fields.get(i).getName(), i);
-        }
+        this.count = count;
     }
 
-    public static ClassView of(ClassEntry entry) {
-        return new ClassView(
-                entry.getName(),
-                entry.getId(),
-                entry.getSuperClassId(),
-                entry.getInstanceSize(),
-                entry.getFields()
-        );
+    public static ClassView create(long name, long id, long superClassId, int instanceSize, List<InstanceField> fields) {
+        return new ClassView(name, id, superClassId, instanceSize, 0, fields);
     }
 
-    public String getName() {
+    public long getName() {
         return name;
     }
 
@@ -61,12 +45,8 @@ public final class ClassView {
         return instanceSize;
     }
 
-    public List<FieldEntry> getFields() {
+    public List<InstanceField> getFields() {
         return fields;
-    }
-
-    public boolean isFlat() {
-        return isFlat;
     }
 
     public int getCount() {
@@ -77,12 +57,44 @@ public final class ClassView {
         return count != 0;
     }
 
-    public int fieldIndex(String name) {
-        return fieldsIndex.getInt(name);
-    }
-
     public void addCount() {
         count++;
+    }
+
+    public byte[] serialize() {
+        var buffer = ByteBuffer.allocate(3 * Long.BYTES + 2 * Integer.BYTES + fields.size() * (Long.BYTES + 1));
+        buffer.putLong(name);
+        buffer.putLong(id);
+        buffer.putLong(superClassId);
+        buffer.putInt(instanceSize);
+        buffer.putInt(count);
+
+        for (var field : fields) {
+            buffer.putLong(field.getFieldNameStringId());
+            buffer.put((byte) field.getType().ordinal());
+        }
+
+        return buffer.array();
+    }
+
+    public static ClassView deserialize(byte[] data) {
+        var buffer = ByteBuffer.wrap(data);
+        return new ClassView(
+                buffer.getLong(),
+                buffer.getLong(),
+                buffer.getLong(),
+                buffer.getInt(),
+                buffer.getInt(),
+                deserializeFields(buffer)
+        );
+    }
+
+    private static List<InstanceField> deserializeFields(ByteBuffer buffer) {
+        var result = new ArrayList<InstanceField>(buffer.remaining() / (Long.BYTES + 1));
+        while (buffer.hasRemaining()) {
+            result.add(new InstanceField(buffer.getLong(), Type.VALUES.get(buffer.get())));
+        }
+        return result;
     }
 
     @Override
@@ -110,8 +122,6 @@ public final class ClassView {
                 ", superClassId=" + superClassId +
                 ", instanceSize=" + instanceSize +
                 ", fields=" + fields +
-                ", fieldsIndex=" + fieldsIndex +
-                ", isFlat=" + isFlat +
                 ", count=" + count +
                 '}';
     }

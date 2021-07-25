@@ -3,16 +3,20 @@ package org.sharpler.hprofcrawler;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import org.fusesource.leveldbjni.JniDBFactory;
 import org.iq80.leveldb.DB;
 import org.iq80.leveldb.Options;
 import org.jooq.lambda.Unchecked;
-import org.jooq.lambda.function.Function4;
+import org.jooq.lambda.function.Function3;
+import org.jooq.lambda.function.Function5;
+import org.jooq.lambda.function.Function6;
 
 import javax.annotation.Nullable;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -86,6 +90,12 @@ public final class Utils {
         };
     }
 
+    public static void addAll(ByteArrayList list, byte[] bytes) {
+        for (var x : bytes) {
+            list.add(x);
+        }
+    }
+
     @SuppressWarnings("NumericCastThatLosesPrecision")
     public static byte[] serializeTwoLong(long x, long y) {
         return new byte[]{
@@ -107,7 +117,7 @@ public final class Utils {
                 (byte) ((y) & 0xff),
         };
     }
-    
+
     @SuppressWarnings("OverlyComplexBooleanExpression")
     public static long deserializeLong(byte[] bytes) {
         return (bytes[0] & 0xFFL) << 56
@@ -125,36 +135,82 @@ public final class Utils {
         return null;
     }
 
+
+    public static <
+            A extends AutoCloseable,
+            B extends AutoCloseable,
+            C extends AutoCloseable,
+            R>
+    R resourceOwner(
+            Function3<? super A, ? super B, ? super C, ? extends R> ownerBuilder,
+            Supplier<? extends A> aSupplier,
+            Supplier<? extends B> bSupplier,
+            Supplier<? extends C> cSupplier
+    ) {
+        A a = null;
+        B b = null;
+        C c = null;
+        try {
+            a = aSupplier.get();
+            b = bSupplier.get();
+            c = cSupplier.get();
+
+            return ownerBuilder.apply(a, b, c);
+        } catch (Exception exp) {
+            Stream.of(a, b, c)
+                    .filter(Objects::nonNull)
+                    .flatMap(Utils::safeClose)
+                    .forEach(exp::addSuppressed);
+            throw exp;
+        }
+    }
+
     public static <
             A extends AutoCloseable,
             B extends AutoCloseable,
             C extends AutoCloseable,
             D extends AutoCloseable,
+            E extends AutoCloseable,
+            F extends AutoCloseable,
             R>
     R resourceOwner(
-            Function4<? super A, ? super B, ? super C, ? super D, ? extends R> ownerBuilder,
+            Function6<? super A, ? super B, ? super C, ? super D, ? super E, ? super F, ? extends R> ownerBuilder,
             Supplier<? extends A> aSupplier,
             Supplier<? extends B> bSupplier,
             Supplier<? extends C> cSupplier,
-            Supplier<? extends D> dSupplier
+            Supplier<? extends D> dSupplier,
+            Supplier<? extends E> eSupplier,
+            Supplier<? extends F> fSupplier
     ) {
         A a = null;
         B b = null;
         C c = null;
         D d = null;
+        E e = null;
+        F f = null;
         try {
             a = aSupplier.get();
             b = bSupplier.get();
             c = cSupplier.get();
             d = dSupplier.get();
+            e = eSupplier.get();
+            f = fSupplier.get();
 
-            return ownerBuilder.apply(a, b, c, d);
-        } catch (Exception e) {
-            Stream.of(a, b, c, d)
+            return ownerBuilder.apply(a, b, c, d, e, f);
+        } catch (Exception exp) {
+            Stream.of(a, b, c, d, e, f)
                     .filter(Objects::nonNull)
                     .flatMap(Utils::safeClose)
-                    .forEach(e::addSuppressed);
-            throw e;
+                    .forEach(exp::addSuppressed);
+            throw exp;
         }
+    }
+
+    @Nullable
+    public static <T, U> U map(@Nullable T val, Function<? super T, ? extends U> mapper) {
+        if (val == null) {
+            return null;
+        }
+        return mapper.apply(val);
     }
 }

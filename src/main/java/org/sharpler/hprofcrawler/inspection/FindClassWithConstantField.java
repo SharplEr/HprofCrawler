@@ -1,5 +1,8 @@
 package org.sharpler.hprofcrawler.inspection;
 
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMaps;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.sharpler.hprofcrawler.api.ScanOperation;
 import org.sharpler.hprofcrawler.parser.Value;
 import org.sharpler.hprofcrawler.views.ClassView;
@@ -16,7 +19,7 @@ public final class FindClassWithConstantField implements ScanOperation<List<Find
 
     private final int minimalInstancesCount;
 
-    private final HashMap<String, InfoBuilder> builders = new HashMap<>();
+    private final Long2ObjectOpenHashMap<InfoBuilder> builders = new Long2ObjectOpenHashMap<>();
 
     public FindClassWithConstantField(int minimalInstancesCount) {
         assert minimalInstancesCount > 1;
@@ -84,13 +87,13 @@ public final class FindClassWithConstantField implements ScanOperation<List<Find
 
         public final Info build() {
             if (valuesBase == null) {
-                return new Info(classView, Map.of());
+                return new Info(classView, Long2ObjectMaps.emptyMap());
             }
-            HashMap<String, Value> constants = new HashMap<>();
+            Long2ObjectOpenHashMap<Value> constants = new Long2ObjectOpenHashMap<>();
 
             for (int i = 0; i < valuesBase.size(); i++) {
                 if (isUnique[i]) {
-                    constants.put(classView.getFields().get(i).getName(), valuesBase.get(i));
+                    constants.put(classView.getFields().get(i).getFieldNameStringId(), valuesBase.get(i));
                 }
             }
 
@@ -103,9 +106,9 @@ public final class FindClassWithConstantField implements ScanOperation<List<Find
 
     public static final class Info {
         private final ClassView classView;
-        private final Map<String, Value> constants;
+        private final Long2ObjectMap<Value> constants;
 
-        public Info(ClassView classView, Map<String, Value> constants) {
+        public Info(ClassView classView, Long2ObjectMap<Value> constants) {
             this.classView = classView;
             this.constants = constants;
         }
@@ -114,7 +117,7 @@ public final class FindClassWithConstantField implements ScanOperation<List<Find
             return classView;
         }
 
-        public Map<String, Value> getConstants() {
+        public Long2ObjectMap<Value> getConstants() {
             return constants;
         }
 

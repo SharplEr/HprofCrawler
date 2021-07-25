@@ -16,19 +16,21 @@ public class UtilsTest {
     }
 
     @Property
-    public void resourceOwner(boolean aFailed, boolean bFailed, boolean cFailed, boolean dFailed) {
+    public void resourceOwner(boolean aFailed, boolean bFailed, boolean cFailed, boolean dFailed, boolean eFailed, boolean fFailed) {
         Supplier<String> supplier = () -> Utils.resourceOwner(
-                (a, b, c, d) -> String.format("%s:%s:%s:%s", a.getText(), b.getText(), c.getText(), d.getText()),
+                (a, b, c, d, e, f) -> String.format("%s:%s:%s:%s:%s:%s", a.getText(), b.getText(), c.getText(), d.getText(), e.getText(), f.getText()),
                 () -> throwIf("a", aFailed),
                 () -> throwIf("b", bFailed),
                 () -> throwIf("c", cFailed),
-                () -> throwIf("d", dFailed)
+                () -> throwIf("d", dFailed),
+                () -> throwIf("e", eFailed),
+                () -> throwIf("f", fFailed)
         );
 
-        if (aFailed || bFailed || cFailed || dFailed) {
+        if (aFailed || bFailed || cFailed || dFailed || eFailed || fFailed) {
             Assertions.assertThrows(RuntimeException.class, supplier::get);
         } else {
-            Assertions.assertEquals("a:b:c:d", supplier.get());
+            Assertions.assertEquals("a:b:c:d:e:f", supplier.get());
         }
     }
 
