@@ -86,7 +86,7 @@ public final class FindClassWithConstantField implements Collector<ClassView, In
             }
 
             return new Stat(
-                    nameResolver.apply(classView.getId()),
+                    nameResolver.apply(classView.getName()),
                     constants.long2ObjectEntrySet().stream()
                             .map(e -> new FieldInfo(nameResolver.apply(e.getLongKey()), e.getValue()))
                             .collect(Collectors.toList())

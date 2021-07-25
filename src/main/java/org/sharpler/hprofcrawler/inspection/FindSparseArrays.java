@@ -7,6 +7,7 @@ import org.sharpler.hprofcrawler.views.ClassView;
 import org.sharpler.hprofcrawler.views.ObjectArrayView;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.LongFunction;
 import java.util.stream.Collectors;
 
@@ -33,7 +34,7 @@ public final class FindSparseArrays implements Collector<ClassView, ObjectArrayV
     @Override
     public List<FindSparseArrays.Stat> buildResult(LongFunction<String> nameResolver) {
         return stats.long2LongEntrySet().stream()
-                .map(e -> new Stat(nameResolver.apply(e.getLongKey()), e.getLongValue()))
+                .map(e -> new Stat(Objects.requireNonNull(nameResolver.apply(e.getLongKey())), e.getLongValue()))
                 .collect(Collectors.toList());
     }
 
