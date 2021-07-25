@@ -1,29 +1,19 @@
 package org.sharpler.hprofcrawler.inspection;
 
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
-import org.sharpler.hprofcrawler.api.PrimArrayScanOperation;
+import org.sharpler.hprofcrawler.api.Collector;
+import org.sharpler.hprofcrawler.api.InstanceConsumer;
 import org.sharpler.hprofcrawler.parser.PrimArray;
 import org.sharpler.hprofcrawler.parser.Type;
 
-import java.util.function.Predicate;
-import java.util.stream.Stream;
+import java.util.function.LongFunction;
 
 public final class FindPrimArrayWithTooWideRange implements
-        PrimArrayScanOperation<Object2LongOpenHashMap<FindPrimArrayWithTooWideRange.RangeShift>>
-{
+        Collector<Type, PrimArray, Object2LongOpenHashMap<FindPrimArrayWithTooWideRange.RangeShift>> {
     private final Object2LongOpenHashMap<RangeShift> stats = new Object2LongOpenHashMap<>();
 
     @Override
-    public Stream<Type> types() {
-        return Stream.of(
-                Type.LONG,
-                Type.INT,
-                Type.SHORT
-        );
-    }
-
-    @Override
-    public Predicate<PrimArray> getConsumer(Type type) {
+    public InstanceConsumer<PrimArray> getConsumer(Type type) {
         switch (type) {
             case LONG:
                 return x -> {
@@ -71,7 +61,7 @@ public final class FindPrimArrayWithTooWideRange implements
     ;
 
     @Override
-    public Object2LongOpenHashMap<RangeShift> buildResult() {
+    public Object2LongOpenHashMap<RangeShift> buildResult(LongFunction<String> nameResolver) {
         return stats;
     }
 
