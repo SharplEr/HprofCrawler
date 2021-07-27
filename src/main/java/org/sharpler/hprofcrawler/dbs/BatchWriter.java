@@ -4,6 +4,7 @@ import org.iq80.leveldb.WriteBatch;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -38,7 +39,7 @@ public class BatchWriter {
             try {
                 currentBatch.close();
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new UncheckedIOException(e);
             }
             currentBatch = generator.get();
             currentValue = 0;
@@ -53,7 +54,7 @@ public class BatchWriter {
             try {
                 currentBatch.close();
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new UncheckedIOException(e);
             }
             currentValue = 0;
             currentBatch = null;

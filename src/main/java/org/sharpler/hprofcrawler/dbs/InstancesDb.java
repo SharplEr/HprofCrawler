@@ -6,6 +6,7 @@ import org.sharpler.hprofcrawler.Utils;
 import org.sharpler.hprofcrawler.entries.InstanceEntry;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -49,7 +50,7 @@ public final class InstancesDb implements Database {
             }
 
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new UncheckedIOException(e);
         }
     }
 

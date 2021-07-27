@@ -12,31 +12,18 @@ import org.sharpler.hprofcrawler.views.ClassView;
 import java.util.Objects;
 
 public final class Index {
-    private final Long2ObjectOpenHashMap<ClassView> classes;
 
     private final Object2LongOpenHashMap<Type> primArrayCount;
 
     private final Long2LongOpenHashMap objectArrayCount;
 
-    public Index(
-            Long2ObjectOpenHashMap<ClassView> classes,
-            Object2LongOpenHashMap<Type> primArrayCount,
-            Long2LongOpenHashMap objectArrayCount) {
-        this.classes = classes;
+    public Index(Object2LongOpenHashMap<Type> primArrayCount, Long2LongOpenHashMap objectArrayCount) {
         this.primArrayCount = primArrayCount;
         this.objectArrayCount = objectArrayCount;
     }
 
-    public static Index reload(PrimArraysDb primArraysDb, ObjectArraysDb objectArraysDb, ClassInfoDb classInfoDb) {
-        return new Index(
-                classInfoDb.reloadIndex(),
-                primArraysDb.reloadIndex(),
-                objectArraysDb.reloadIndex()
-        );
-    }
-
-    public ClassView findClassView(long id) {
-        return Objects.requireNonNull(classes.get(id));
+    public static Index reload(PrimArraysDb primArraysDb, ObjectArraysDb objectArraysDb) {
+        return new Index(primArraysDb.reloadIndex(), objectArraysDb.reloadIndex());
     }
 
     public long getPrimArrayCount(Type type) {
@@ -45,13 +32,5 @@ public final class Index {
 
     public long getObjectArrayCount(long elementClassId) {
         return objectArrayCount.get(elementClassId);
-    }
-
-    public Long2ObjectOpenHashMap<ClassView> getClasses() {
-        return classes;
-    }
-
-    public int classesCount() {
-        return classes.size();
     }
 }

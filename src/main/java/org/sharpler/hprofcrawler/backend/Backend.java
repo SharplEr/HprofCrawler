@@ -9,7 +9,6 @@ import org.sharpler.hprofcrawler.views.ClassView;
 import org.sharpler.hprofcrawler.views.InstanceView;
 import org.sharpler.hprofcrawler.views.ObjectArrayView;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -36,10 +35,9 @@ public final class Backend {
     }
 
     public <T> T scanInstance(ClassFilter filter, Collector<ClassView, InstanceView, T> collector, Progress progress) {
-        var classes = index.getClasses().values()
+        var classes = storage.findClasses(filter)
                 .stream()
                 .filter(ClassView::isNotEmpty)
-                .filter(x -> filter.filterId(x.getId()) && filter.filterClass(x))
                 .distinct()
                 .collect(Collectors.toList());
 
@@ -48,7 +46,7 @@ public final class Backend {
 
         for (ClassView classView : classes) {
             var consumer = collector.getConsumer(classView);
-            storage.scanClass(classView.getId(), consumer);
+            storage.scanInstance(classView, consumer);
             consumer.finish();
 
             current += classView.getCount();
@@ -89,10 +87,9 @@ public final class Backend {
             Collector<ClassView, ObjectArrayView, ? extends T> operation,
             Progress progress
     ) {
-        List<ClassView> classes = index.getClasses().values()
+        var classes = storage.findClasses(filter)
                 .stream()
                 .filter(x -> index.getObjectArrayCount(x.getId()) > 0)
-                .filter(x -> filter.filterId(x.getId()) && filter.filterClass(x))
                 .distinct()
                 .collect(Collectors.toList());
 
@@ -103,7 +100,7 @@ public final class Backend {
         long current = 0L;
 
         for (ClassView classView : classes) {
-            storage.scanObjectArray(classView.getId(), operation.getConsumer(classView));
+            storage.scanObjectArray(classView, operation.getConsumer(classView));
 
             current += index.getObjectArrayCount(classView.getId());
             progress.setValue(Math.toIntExact(current * 100L / total));

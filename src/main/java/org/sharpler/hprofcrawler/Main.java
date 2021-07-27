@@ -113,7 +113,7 @@ public final class Main implements Callable<Integer> {
     Backend reloadBackend(Path dir) {
         return Utils.resourceOwner(
                 (object2Class, instances, primArraysDb, objectArraysDb, namesDb, classes) -> {
-                    var index = Index.reload(primArraysDb, objectArraysDb, classes);
+                    var index = Index.reload(primArraysDb, objectArraysDb);
                     return new Backend(
                             new LevelDbStorage(
                                     index,
@@ -121,7 +121,8 @@ public final class Main implements Callable<Integer> {
                                     instances,
                                     primArraysDb,
                                     objectArraysDb,
-                                    namesDb
+                                    namesDb,
+                                    classes
                             ),
                             index
                     );

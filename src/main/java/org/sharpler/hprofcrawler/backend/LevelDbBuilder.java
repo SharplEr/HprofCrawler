@@ -164,7 +164,7 @@ public final class LevelDbBuilder extends DummyHandler implements BackendBuilder
 
         classes.long2ObjectEntrySet().forEach(e-> classInfoDb.put(e.getLongKey(), e.getValue()));
 
-        return new Index(classes, primArrayCount, objectArrayCount);
+        return new Index(primArrayCount, objectArrayCount);
     }
 
 
@@ -177,7 +177,8 @@ public final class LevelDbBuilder extends DummyHandler implements BackendBuilder
                 instancesDb,
                 primArraysDb,
                 objectArraysDb,
-                namesDb
+                namesDb,
+                classInfoDb
         );
     }
 

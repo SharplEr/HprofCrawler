@@ -10,6 +10,7 @@ import org.sharpler.hprofcrawler.parser.PrimArray;
 import org.sharpler.hprofcrawler.parser.Type;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -53,7 +54,7 @@ public class ObjectArraysDb implements Database {
             }
 
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -67,7 +68,7 @@ public class ObjectArraysDb implements Database {
 
             return result;
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new UncheckedIOException(e);
         }
     }
 
