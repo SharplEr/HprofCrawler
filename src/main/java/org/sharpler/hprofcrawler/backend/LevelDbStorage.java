@@ -1,10 +1,8 @@
 package org.sharpler.hprofcrawler.backend;
 
-import java.util.Optional;
-import java.util.OptionalLong;
-import java.util.function.Predicate;
-
 import org.sharpler.hprofcrawler.Utils;
+import org.sharpler.hprofcrawler.api.ClassFilter;
+import org.sharpler.hprofcrawler.dbs.ClassInfoDb;
 import org.sharpler.hprofcrawler.dbs.InstancesDb;
 import org.sharpler.hprofcrawler.dbs.NamesDb;
 import org.sharpler.hprofcrawler.dbs.Object2ClassDb;
@@ -12,10 +10,16 @@ import org.sharpler.hprofcrawler.dbs.ObjectArraysDb;
 import org.sharpler.hprofcrawler.dbs.PrimArraysDb;
 import org.sharpler.hprofcrawler.parser.PrimArray;
 import org.sharpler.hprofcrawler.parser.Type;
+import org.sharpler.hprofcrawler.views.ClassView;
 import org.sharpler.hprofcrawler.views.InstanceView;
 import org.sharpler.hprofcrawler.views.ObjectArrayView;
 
 import javax.annotation.Nullable;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.OptionalLong;
+import java.util.function.Predicate;
 
 public final class LevelDbStorage implements Storage, AutoCloseable {
     private final Index index;
@@ -27,20 +31,23 @@ public final class LevelDbStorage implements Storage, AutoCloseable {
     private final ObjectArraysDb objectArraysDb;
     private final NamesDb namesDb;
 
+    private final ClassInfoDb classes;
+
     public LevelDbStorage(
             Index index,
             Object2ClassDb object2Class,
             InstancesDb instances,
             PrimArraysDb primArraysDb,
             ObjectArraysDb objectArraysDb,
-            NamesDb namesDb)
-    {
+            NamesDb namesDb,
+            ClassInfoDb classes) {
         this.index = index;
         this.object2Class = object2Class;
         this.instances = instances;
         this.primArraysDb = primArraysDb;
         this.objectArraysDb = objectArraysDb;
         this.namesDb = namesDb;
+        this.classes = classes;
     }
 
     @Override
@@ -52,18 +59,23 @@ public final class LevelDbStorage implements Storage, AutoCloseable {
         }
 
         return instances.find(classId.getAsLong(), objectId)
-                .map(x -> InstanceView.of(x, index));
+                .map(x -> InstanceView.of(x, classes));
     }
 
     @Override
     public Optional<InstanceView> lookupObject(long classId, long objectId) {
         return instances.find(classId, objectId)
-                .map(x -> InstanceView.of(x, index));
+                .map(x -> InstanceView.of(x, classes));
     }
 
     @Override
-    public void scanClass(long classId, Predicate<? super InstanceView> consumer) {
-        instances.scan(classId, x -> consumer.test(InstanceView.of(x, index)));
+    public void scanInstance(long classId, Predicate<? super InstanceView> consumer) {
+        instances.scan(classId, x -> consumer.test(InstanceView.of(x, classes)));
+    }
+
+    @Override
+    public void scanInstance(ClassView classView, Predicate<? super InstanceView> consumer) {
+        instances.scan(classView.getId(), x -> consumer.test(InstanceView.of(x, classView)));
     }
 
     @Override
@@ -75,7 +87,15 @@ public final class LevelDbStorage implements Storage, AutoCloseable {
     public void scanObjectArray(long elementsClassId, Predicate<? super ObjectArrayView> consumer) {
         objectArraysDb.scan(
                 elementsClassId,
-                x -> consumer.test(new ObjectArrayView(x, index.findClassView(x.getElementsClassId())))
+                x -> consumer.test(new ObjectArrayView(x, Objects.requireNonNull(classes.find(x.getElementsClassId()))))
+        );
+    }
+
+    @Override
+    public void scanObjectArray(ClassView classView, Predicate<? super ObjectArrayView> consumer) {
+        objectArraysDb.scan(
+                classView.getId(),
+                x -> consumer.test(new ObjectArrayView(x, classView))
         );
     }
 
@@ -83,6 +103,11 @@ public final class LevelDbStorage implements Storage, AutoCloseable {
     @Override
     public String resolveName(long id) {
         return namesDb.find(id);
+    }
+
+    @Override
+    public List<ClassView> findClasses(ClassFilter filter) {
+        return classes.find(filter);
     }
 
     @Override

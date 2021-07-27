@@ -1,10 +1,11 @@
 package org.sharpler.hprofcrawler.views;
 
-import java.util.List;
-
+import org.sharpler.hprofcrawler.dbs.ClassInfoDb;
 import org.sharpler.hprofcrawler.entries.InstanceEntry;
-import org.sharpler.hprofcrawler.backend.Index;
 import org.sharpler.hprofcrawler.parser.Value;
+
+import java.util.List;
+import java.util.Objects;
 
 public final class InstanceView {
     private final long objId;
@@ -18,10 +19,18 @@ public final class InstanceView {
         this.fields = fields;
     }
 
-    public static InstanceView of(InstanceEntry entry, Index index) {
+    public static InstanceView of(InstanceEntry entry, ClassView classView) {
         return new InstanceView(
                 entry.getObjectId(),
-                index.findClassView(entry.getClassId()),
+                classView,
+                entry.getFields()
+        );
+    }
+
+    public static InstanceView of(InstanceEntry entry, ClassInfoDb classes) {
+        return new InstanceView(
+                entry.getObjectId(),
+                Objects.requireNonNull(classes.find(entry.getClassId())),
                 entry.getFields()
         );
     }

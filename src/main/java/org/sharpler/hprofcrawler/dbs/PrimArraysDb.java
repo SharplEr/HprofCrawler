@@ -9,6 +9,7 @@ import org.sharpler.hprofcrawler.parser.PrimArray;
 import org.sharpler.hprofcrawler.parser.Type;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -52,7 +53,7 @@ public class PrimArraysDb implements Database {
             }
 
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -66,7 +67,7 @@ public class PrimArraysDb implements Database {
 
             return result;
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new UncheckedIOException(e);
         }
     }
 
