@@ -76,7 +76,7 @@ public final class InstanceEntry {
         var buffer = ByteBuffer.wrap(data);
         var objectId = buffer.getLong();
         var classId = buffer.getLong();
-        var fields = new ArrayList<Value>();
+        var fields = new ArrayList<Value>(buffer.remaining() / Value.SERIALIZE_SIZE);
         while (buffer.hasRemaining()) {
             fields.add(Value.deserialize(buffer));
         }
