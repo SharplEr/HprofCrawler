@@ -3,6 +3,7 @@ package org.sharpler.hprofcrawler.parser;
 import java.nio.ByteBuffer;
 
 public final class Value {
+    public static final int SERIALIZE_SIZE = Long.BYTES + 1;
     private final Type type;
     private final long value;
 

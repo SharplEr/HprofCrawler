@@ -3,8 +3,14 @@ package org.sharpler.hprofcrawler.views;
 import org.sharpler.hprofcrawler.api.Progress;
 
 public final class TerminalProgress implements Progress {
+    private volatile int lastValue = -1;
+
     @Override
     public void setValue(int value) {
+        if (value == lastValue) {
+            return;
+        }
+        lastValue = value;
         // "|=====     |50%\r"
         StringBuilder sb = new StringBuilder(17);
         sb.append('|');

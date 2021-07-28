@@ -57,6 +57,7 @@ public class PrimArraysDb implements Database {
         }
     }
 
+    // TODO: serialize that information into small file
     public final Object2LongOpenHashMap<Type> reloadIndex() {
         var result = new Object2LongOpenHashMap<Type>(Type.VALUES.size());
         try (DBIterator iterator = db.iterator(new ReadOptions().fillCache(false))) {
