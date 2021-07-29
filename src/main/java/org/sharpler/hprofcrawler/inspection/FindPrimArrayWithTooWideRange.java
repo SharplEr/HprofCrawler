@@ -13,8 +13,8 @@ public final class FindPrimArrayWithTooWideRange implements
     private final Object2LongOpenHashMap<RangeShift> stats = new Object2LongOpenHashMap<>();
 
     @Override
-    public InstanceConsumer<PrimArray> getConsumer(Type type) {
-        switch (type) {
+    public InstanceConsumer<PrimArray> getConsumer(Type key) {
+        switch (key) {
             case LONG:
                 return x -> {
                     if (x.getLength() == 0) {

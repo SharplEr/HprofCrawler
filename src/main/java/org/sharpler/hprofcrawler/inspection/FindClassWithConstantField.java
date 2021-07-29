@@ -22,8 +22,8 @@ public final class FindClassWithConstantField implements Collector<ClassView, In
     }
 
     @Override
-    public InstanceConsumer<InstanceView> getConsumer(ClassView clazz) {
-        return builders.computeIfAbsent(clazz.getName(), k -> new InfoBuilder(clazz));
+    public InstanceConsumer<InstanceView> getConsumer(ClassView key) {
+        return builders.computeIfAbsent(key.getName(), k -> new InfoBuilder(key));
     }
 
     @Override
@@ -51,14 +51,14 @@ public final class FindClassWithConstantField implements Collector<ClassView, In
         }
 
         @Override
-        public final boolean test(@Nonnull InstanceView view) {
+        public final boolean test(@Nonnull InstanceView instance) {
             if (valuesBase == null) {
-                setup(view);
+                setup(instance);
                 return false;
             }
             boolean hasNoUnique = true;
 
-            List<Value> values = view.getFields();
+            List<Value> values = instance.getFields();
 
             for (int i = 0; i < valuesBase.size(); i++) {
                 if (isUnique[i]) {
