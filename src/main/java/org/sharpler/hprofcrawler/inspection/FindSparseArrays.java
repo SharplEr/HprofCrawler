@@ -15,7 +15,7 @@ public final class FindSparseArrays implements Collector<ClassView, ObjectArrayV
     private final Long2LongOpenHashMap stats = new Long2LongOpenHashMap();
 
     @Override
-    public InstanceConsumer<ObjectArrayView> getConsumer(ClassView clazz) {
+    public InstanceConsumer<ObjectArrayView> getConsumer(ClassView key) {
         return x -> {
             int zeroCount = 0;
             for (long id : x.getArray().getValues()) {
@@ -24,7 +24,7 @@ public final class FindSparseArrays implements Collector<ClassView, ObjectArrayV
                 }
             }
             if (zeroCount > x.getArray().getValues().length / 2) {
-                stats.addTo(clazz.getName(), 1L);
+                stats.addTo(key.getName(), 1L);
             }
 
             return false;
