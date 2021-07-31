@@ -6,6 +6,11 @@ import javax.annotation.Nullable;
 import java.util.function.LongPredicate;
 import java.util.function.Predicate;
 
+/**
+ * Could use for filtering any index where class is the first key.
+ * <p>
+ * In brief this is extended version of {@code Predicate<ClassView>}.
+ */
 // TODO: add included ids
 public final class ClassFilter {
     private static final ClassFilter MATCH_ALL = new ClassFilter(x -> true, x -> true);
