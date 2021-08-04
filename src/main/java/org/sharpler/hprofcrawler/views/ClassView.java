@@ -1,7 +1,9 @@
 package org.sharpler.hprofcrawler.views;
 
+import org.sharpler.hprofcrawler.Utils;
 import org.sharpler.hprofcrawler.parser.InstanceField;
 import org.sharpler.hprofcrawler.parser.Type;
+import org.sharpler.hprofcrawler.parser.Value;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -71,7 +73,7 @@ public final class ClassView {
 
         for (var field : fields) {
             buffer.putLong(field.getFieldNameStringId());
-            buffer.put((byte) field.getType().ordinal());
+            buffer.put(Utils.toByteExact(field.getType().ordinal()));
         }
 
         return buffer.array();
@@ -94,6 +96,30 @@ public final class ClassView {
         while (buffer.hasRemaining()) {
             result.add(new InstanceField(buffer.getLong(), Type.VALUES.get(buffer.get())));
         }
+        return result;
+    }
+
+    public List<Value> deserializePackedFieldValues(ByteBuffer buffer) {
+        if (fields.isEmpty()) {
+            return List.of();
+        }
+
+        var result = new ArrayList<Value>(fields.size());
+        for (var field : fields) {
+            var value = switch (field.getType()) {
+                case OBJ -> Value.ofLong(buffer.getLong(), true);
+                case BOOL -> Value.ofBool(buffer.get() != 0);
+                case CHAR -> Value.ofChar(buffer.getChar());
+                case FLOAT -> Value.ofFloat(buffer.getFloat());
+                case DOUBLE -> Value.ofDouble(buffer.getDouble());
+                case BYTE -> Value.ofByte(buffer.get());
+                case SHORT -> Value.ofShort(buffer.getShort());
+                case INT -> Value.ofInt(buffer.getInt());
+                case LONG -> Value.ofLong(buffer.getLong(), false);
+            };
+            result.add(value);
+        }
+
         return result;
     }
 

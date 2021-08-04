@@ -17,8 +17,6 @@ import org.sharpler.hprofcrawler.views.ObjectArrayView;
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.function.Predicate;
 
 public final class LevelDbStorage implements Storage, AutoCloseable {
@@ -51,31 +49,8 @@ public final class LevelDbStorage implements Storage, AutoCloseable {
     }
 
     @Override
-    public Optional<InstanceView> lookupObject(long objectId) {
-        OptionalLong classId = object2Class.findClassId(objectId);
-
-        if (classId.isEmpty()) {
-            return Optional.empty();
-        }
-
-        return instances.find(classId.getAsLong(), objectId)
-                .map(x -> InstanceView.of(x, classes));
-    }
-
-    @Override
-    public Optional<InstanceView> lookupObject(long classId, long objectId) {
-        return instances.find(classId, objectId)
-                .map(x -> InstanceView.of(x, classes));
-    }
-
-    @Override
-    public void scanInstance(long classId, Predicate<? super InstanceView> consumer) {
-        instances.scan(classId, x -> consumer.test(InstanceView.of(x, classes)));
-    }
-
-    @Override
     public void scanInstance(ClassView classView, Predicate<? super InstanceView> consumer) {
-        instances.scan(classView.getId(), x -> consumer.test(InstanceView.of(x, classView)));
+        instances.scan(classView, consumer);
     }
 
     @Override

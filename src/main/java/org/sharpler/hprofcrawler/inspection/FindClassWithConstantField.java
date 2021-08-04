@@ -14,7 +14,8 @@ import java.util.List;
 import java.util.function.LongFunction;
 import java.util.stream.Collectors;
 
-public final class FindClassWithConstantField implements Collector<ClassView, InstanceView, List<FindClassWithConstantField.Stat>> {
+public final class FindClassWithConstantField implements
+        Collector<ClassView, InstanceView, List<FindClassWithConstantField.Stat>> {
 
     private final Long2ObjectOpenHashMap<InfoBuilder> builders = new Long2ObjectOpenHashMap<>();
 
@@ -77,7 +78,7 @@ public final class FindClassWithConstantField implements Collector<ClassView, In
             if (valuesBase == null) {
                 throw new IllegalStateException();
             }
-            Long2ObjectOpenHashMap<Value> constants = new Long2ObjectOpenHashMap<>();
+            var constants = new Long2ObjectOpenHashMap<Value>();
 
             for (int i = 0; i < valuesBase.size(); i++) {
                 if (isUnique[i]) {
@@ -94,7 +95,7 @@ public final class FindClassWithConstantField implements Collector<ClassView, In
         }
     }
 
-    public static final class Stat {
+    static final class Stat {
         private final String name;
         private final List<FieldInfo> constants;
 

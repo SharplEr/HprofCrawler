@@ -1,7 +1,5 @@
 package org.sharpler.hprofcrawler.parser;
 
-import java.util.List;
-
 public class DummyHandler implements RecordHandler {
     @Override
     public void header(String format, int idSize, long time) {
@@ -145,7 +143,7 @@ public class DummyHandler implements RecordHandler {
     }
 
     @Override
-    public void instanceDump(long objId, int stackTraceSerialNum, long classObjId, List<Value> instanceFieldValues) {
+    public void instanceDump(Instance instance) {
         // No-op.
     }
 

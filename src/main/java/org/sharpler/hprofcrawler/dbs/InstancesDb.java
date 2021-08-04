@@ -4,11 +4,13 @@ import org.iq80.leveldb.DB;
 import org.iq80.leveldb.DBIterator;
 import org.sharpler.hprofcrawler.Utils;
 import org.sharpler.hprofcrawler.entries.InstanceEntry;
+import org.sharpler.hprofcrawler.parser.Instance;
+import org.sharpler.hprofcrawler.views.ClassView;
+import org.sharpler.hprofcrawler.views.InstanceView;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Predicate;
 
 /**
@@ -23,28 +25,23 @@ public final class InstancesDb implements Database {
         writer = new BatchWriter(db::createWriteBatch, db::write, 10000);
     }
 
-    public void put(long classId, long objectId, InstanceEntry entry) {
+    public void put(Instance x) {
         writer.add(
-                Utils.serializeTwoLong(classId, objectId),
-                entry.serialize()
+                Utils.serializeTwoLong(x.classObjId, x.objId),
+                x.serialize()
         );
     }
 
-    public Optional<InstanceEntry> find(long classId, long objectId) {
-        return Optional.ofNullable(db.get(Utils.serializeTwoLong(classId, objectId)))
-                .map(InstanceEntry::deserialize);
-    }
-
-    public void scan(long classId, Predicate<? super InstanceEntry> consumer) {
+    public void scan(ClassView classView, Predicate<? super InstanceView> consumer) {
         try (DBIterator iterator = db.iterator()) {
-            iterator.seek(Utils.serializeLong(classId));
+            iterator.seek(Utils.serializeLong(classView.getId()));
             while (iterator.hasNext()) {
                 Map.Entry<byte[], byte[]> entry = iterator.next();
-                if (Utils.deserializeLong(entry.getKey()) != classId) {
+                if (Utils.deserializeLong(entry.getKey()) != classView.getId()) {
                     break;
                 }
 
-                if (consumer.test(InstanceEntry.deserialize(entry.getValue()))) {
+                if (consumer.test(Instance.deserialize(entry.getValue(), classView))) {
                     break;
                 }
             }

@@ -1,15 +1,10 @@
 package org.sharpler.hprofcrawler.backend;
 
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
-import org.sharpler.hprofcrawler.dbs.ClassInfoDb;
 import org.sharpler.hprofcrawler.dbs.ObjectArraysDb;
 import org.sharpler.hprofcrawler.dbs.PrimArraysDb;
 import org.sharpler.hprofcrawler.parser.Type;
-import org.sharpler.hprofcrawler.views.ClassView;
-
-import java.util.Objects;
 
 public final class Index {
 
