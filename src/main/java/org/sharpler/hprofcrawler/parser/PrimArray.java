@@ -60,26 +60,17 @@ public class PrimArray {
     }
 
     public final int getLength() {
-        switch (type) {
-            case LONG:
-                return ((long[]) array).length;
-            case BOOL:
-                return ((boolean[]) array).length;
-            case CHAR:
-                return ((char[]) array).length;
-            case FLOAT:
-                return ((float[]) array).length;
-            case DOUBLE:
-                return ((double[]) array).length;
-            case BYTE:
-                return ((byte[]) array).length;
-            case SHORT:
-                return ((short[]) array).length;
-            case INT:
-                return ((int[]) array).length;
-        }
-
-        throw new IllegalStateException();
+        return switch (type) {
+            case LONG -> ((long[]) array).length;
+            case BOOL -> ((boolean[]) array).length;
+            case CHAR -> ((char[]) array).length;
+            case FLOAT -> ((float[]) array).length;
+            case DOUBLE -> ((double[]) array).length;
+            case BYTE -> ((byte[]) array).length;
+            case SHORT -> ((short[]) array).length;
+            case INT -> ((int[]) array).length;
+            case OBJ -> throw new IllegalStateException("Objects are not supported");
+        };
     }
 
     public final <T> T map(
@@ -91,92 +82,66 @@ public class PrimArray {
             Function<char[], ? extends T> forChar,
             Function<double[], ? extends T> forDouble,
             Function<float[], ? extends T> forFloat
-    )
-    {
-        switch (type) {
-            case LONG:
-                return forLong.apply((long[]) array);
-            case BOOL:
-                return forBoolean.apply((boolean[]) array);
-            case CHAR:
-                return forChar.apply((char[]) array);
-            case FLOAT:
-                return forFloat.apply((float[]) array);
-            case DOUBLE:
-                return forDouble.apply((double[]) array);
-            case BYTE:
-                return forByte.apply((byte[]) array);
-            case SHORT:
-                return forShort.apply((short[]) array);
-            case INT:
-                return forInt.apply((int[]) array);
-        }
-
-        throw new IllegalStateException();
+    ) {
+        return switch (type) {
+            case LONG -> forLong.apply((long[]) array);
+            case BOOL -> forBoolean.apply((boolean[]) array);
+            case CHAR -> forChar.apply((char[]) array);
+            case FLOAT -> forFloat.apply((float[]) array);
+            case DOUBLE -> forDouble.apply((double[]) array);
+            case BYTE -> forByte.apply((byte[]) array);
+            case SHORT -> forShort.apply((short[]) array);
+            case INT -> forInt.apply((int[]) array);
+            case OBJ -> throw new IllegalStateException("Objects are not supported");
+        };
     }
 
     public final byte[] serialize() {
         int length = getLength();
 
-        ByteBuffer buffer = ByteBuffer.allocate(
-                1 * Integer.BYTES +
-                        1 * Long.BYTES +
-                        type.sizeInBytes() * length
-        );
+        ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES + Long.BYTES + type.sizeInBytes() * length);
 
         buffer.putInt(type.ordinal());
         buffer.putLong(objectId);
-
-        map(
-                x -> {
-                    for (long t : x) {
-                        buffer.putLong(t);
-                    }
-                    return Utils.nullTs();
-                },
-                x -> {
-                    for (int t : x) {
-                        buffer.putInt(t);
-                    }
-                    return Utils.nullTs();
-                },
-                x -> {
-                    for (short t : x) {
-                        buffer.putShort(t);
-                    }
-                    return Utils.nullTs();
-                },
-                x -> {
-                    for (byte t : x) {
-                        buffer.put(t);
-                    }
-                    return Utils.nullTs();
-                },
-                x -> {
-                    for (boolean t : x) {
-                        buffer.put(t ? (byte) 1 : (byte) 0);
-                    }
-                    return Utils.nullTs();
-                },
-                x -> {
-                    for (char t : x) {
-                        buffer.putChar(t);
-                    }
-                    return Utils.nullTs();
-                },
-                x -> {
-                    for (double t : x) {
-                        buffer.putDouble(t);
-                    }
-                    return Utils.nullTs();
-                },
-                x -> {
-                    for (float t : x) {
-                        buffer.putFloat(t);
-                    }
-                    return Utils.nullTs();
+        switch (type) {
+            case LONG -> {
+                for (long t : (long[]) array) {
+                    buffer.putLong(t);
                 }
-        );
+            }
+            case BOOL -> {
+                for (boolean t : (boolean[]) array) {
+                    buffer.put(t ? (byte) 1 : (byte) 0);
+                }
+            }
+            case CHAR -> {
+                for (char t : (char[]) array) {
+                    buffer.putChar(t);
+                }
+            }
+            case FLOAT -> {
+                for (float t : (float[]) array) {
+                    buffer.putFloat(t);
+                }
+            }
+            case DOUBLE -> {
+                for (double t : (double[]) array) {
+                    buffer.putDouble(t);
+                }
+            }
+            case BYTE -> buffer.put((byte[]) array);
+            case SHORT -> {
+                for (short t : (short[]) array) {
+                    buffer.putShort(t);
+                }
+            }
+            case INT -> {
+                for (int t : (int[]) array) {
+                    buffer.putInt(t);
+                }
+            }
+            case OBJ -> throw new IllegalStateException("Objects are not supported");
+        }
 
         return buffer.array();
     }

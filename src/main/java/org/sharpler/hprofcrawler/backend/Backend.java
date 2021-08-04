@@ -9,7 +9,6 @@ import org.sharpler.hprofcrawler.views.ClassView;
 import org.sharpler.hprofcrawler.views.InstanceView;
 import org.sharpler.hprofcrawler.views.ObjectArrayView;
 
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -20,18 +19,6 @@ public final class Backend {
     public Backend(Storage storage, Index index) {
         this.storage = storage;
         this.index = index;
-    }
-
-    public Index getIndex() {
-        return index;
-    }
-
-    public Optional<InstanceView> lookup(long objectId) {
-        return storage.lookupObject(objectId);
-    }
-
-    public Optional<InstanceView> lookup(long classId, long objectId) {
-        return storage.lookupObject(classId, objectId);
     }
 
     public <T> T scanInstance(ClassFilter filter, Collector<ClassView, InstanceView, T> collector, Progress progress) {

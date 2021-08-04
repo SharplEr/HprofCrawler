@@ -125,6 +125,7 @@ public final class Value {
         return type;
     }
 
+    @SuppressWarnings("NumericCastThatLosesPrecision")
     public byte[] serialize() {
         return new byte[]{
                 (byte) type.ordinal(),
@@ -206,7 +207,7 @@ public final class Value {
 
     @Override
     public String toString() {
-        return "Value2{" +
+        return "Value{" +
                 "type=" + type +
                 ", value=" + value +
                 '}';

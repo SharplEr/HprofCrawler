@@ -9,7 +9,6 @@ import org.iq80.leveldb.DB;
 import org.iq80.leveldb.Options;
 import org.jooq.lambda.Unchecked;
 import org.jooq.lambda.function.Function3;
-import org.jooq.lambda.function.Function5;
 import org.jooq.lambda.function.Function6;
 
 import javax.annotation.Nullable;
@@ -36,6 +35,14 @@ public final class Utils {
 
     private Utils() {
         // No-op.
+    }
+
+    public static byte toByteExact(int x) {
+        byte result = (byte) x;
+        if (result != x) {
+            throw new ArithmeticException("integer overflow");
+        }
+        return result;
     }
 
     public static DB openDb(Path path) {

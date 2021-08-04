@@ -12,7 +12,6 @@ import org.sharpler.hprofcrawler.dbs.ObjectArraysDb;
 import org.sharpler.hprofcrawler.dbs.PrimArraysDb;
 import org.sharpler.hprofcrawler.inspection.BuildInInspection;
 import org.sharpler.hprofcrawler.parser.HprofParser;
-import org.sharpler.hprofcrawler.views.TerminalProgress;
 import picocli.CommandLine;
 
 import java.io.IOException;
@@ -56,11 +55,11 @@ public final class Main implements Callable<Integer> {
         }
         var dbsDir = dumpPath.getParent().resolve("dbs");
         boolean shouldRebuild;
-        if (!Files.exists(dbsDir)) {
+        if (Files.exists(dbsDir)) {
+            shouldRebuild = forceRebuild;
+        } else {
             Files.createDirectory(dbsDir);
             shouldRebuild = true;
-        } else {
-            shouldRebuild = forceRebuild;
         }
 
 

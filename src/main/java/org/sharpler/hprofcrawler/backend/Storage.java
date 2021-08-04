@@ -1,7 +1,6 @@
 package org.sharpler.hprofcrawler.backend;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Predicate;
 
 import org.sharpler.hprofcrawler.api.ClassFilter;
@@ -14,11 +13,6 @@ import org.sharpler.hprofcrawler.views.ObjectArrayView;
 import javax.annotation.Nullable;
 
 public interface Storage {
-    Optional<InstanceView> lookupObject(long objectId);
-
-    Optional<InstanceView> lookupObject(long classId, long objectId);
-
-    void scanInstance(long classId, Predicate<? super InstanceView> consumer);
 
     void scanInstance(ClassView classView, Predicate<? super InstanceView> consumer);
 

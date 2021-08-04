@@ -1,7 +1,5 @@
 package org.sharpler.hprofcrawler.parser;
 
-import java.util.List;
-
 public interface RecordHandler {
     void header(String format, int idSize, long time);
 
@@ -84,7 +82,7 @@ public interface RecordHandler {
                    Static[] statics,
                    InstanceField[] instanceFields);
 
-    void instanceDump(long objId, int stackTraceSerialNum, long classObjId, List<Value> instanceFieldValues);
+    void instanceDump(Instance instance);
 
     void objArrayDump(long objId, int stackTraceSerialNum, long elemClassObjId, long[] elems);
 

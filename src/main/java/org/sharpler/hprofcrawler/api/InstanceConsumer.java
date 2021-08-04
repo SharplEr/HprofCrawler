@@ -12,7 +12,7 @@ public interface InstanceConsumer<TInstance> extends Predicate<TInstance> {
      * Consume an instance from heap dump.
      *
      * @param instance object from heap dump.
-     * @return {@code} true if you finish to collecting values and {@code false} if should keep going.
+     * @return {@code} true if you finish to collecting values and {@code false} if you should keep going.
      */
     @Override
     boolean test(TInstance instance);

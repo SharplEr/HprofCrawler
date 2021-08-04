@@ -13,21 +13,19 @@ import org.sharpler.hprofcrawler.dbs.NamesDb;
 import org.sharpler.hprofcrawler.dbs.Object2ClassDb;
 import org.sharpler.hprofcrawler.dbs.ObjectArraysDb;
 import org.sharpler.hprofcrawler.dbs.PrimArraysDb;
-import org.sharpler.hprofcrawler.entries.InstanceEntry;
 import org.sharpler.hprofcrawler.parser.Constant;
 import org.sharpler.hprofcrawler.parser.DummyHandler;
+import org.sharpler.hprofcrawler.parser.Instance;
 import org.sharpler.hprofcrawler.parser.InstanceField;
 import org.sharpler.hprofcrawler.parser.ObjectArray;
 import org.sharpler.hprofcrawler.parser.PrimArray;
 import org.sharpler.hprofcrawler.parser.Static;
 import org.sharpler.hprofcrawler.parser.Type;
-import org.sharpler.hprofcrawler.parser.Value;
 import org.sharpler.hprofcrawler.views.ClassView;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 
 public final class LevelDbBuilder extends DummyHandler implements BackendBuilder {
@@ -117,13 +115,12 @@ public final class LevelDbBuilder extends DummyHandler implements BackendBuilder
     }
 
     @Override
-    public void instanceDump(long objId, int stackTraceSerialNum, long classObjId, List<Value> fields) {
-        ClassView classView = Objects.requireNonNull(classes.get(classObjId));
+    public void instanceDump(Instance instance) {
+        ClassView classView = Objects.requireNonNull(classes.get(instance.classObjId));
         classView.addCount();
 
-        object2ClassDb.put(objId, classObjId);
-
-        instancesDb.put(classObjId, objId, new InstanceEntry(objId, classObjId, fields));
+        object2ClassDb.put(instance.objId, instance.classObjId);
+        instancesDb.put(instance);
     }
 
     @Override
@@ -162,7 +159,7 @@ public final class LevelDbBuilder extends DummyHandler implements BackendBuilder
             unmarked.removeAll(marked);
         }
 
-        classes.long2ObjectEntrySet().forEach(e-> classInfoDb.put(e.getLongKey(), e.getValue()));
+        classes.long2ObjectEntrySet().forEach(e -> classInfoDb.put(e.getLongKey(), e.getValue()));
 
         return new Index(primArrayCount, objectArrayCount);
     }

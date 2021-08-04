@@ -34,7 +34,7 @@ public interface Collector<TKey, TValue, TResult> {
      * Build final collecting result.
      *
      * @param nameResolver Needs to resolve string {@code long} ids as {@link String}.
-     * @return
+     * @return Final result.
      */
     TResult buildResult(LongFunction<String> nameResolver);
 }

@@ -1,17 +1,20 @@
-package org.sharpler.hprofcrawler.views;
+package org.sharpler.hprofcrawler;
 
 import org.sharpler.hprofcrawler.api.Progress;
 
+/**
+ * Terminal implementation for {@link Progress}.
+ */
 public final class TerminalProgress implements Progress {
     private volatile int lastValue = -1;
 
     @Override
     public void setValue(int value) {
-        if (value == lastValue) {
+        if (value <= lastValue) {
             return;
         }
         lastValue = value;
-        // "|=====     |50%\r"
+        // Trying to build string like that: "|=====     |50%\r"
         StringBuilder sb = new StringBuilder(17);
         sb.append('|');
         for (int i = 0; i < 10; i++) {
