@@ -24,7 +24,7 @@ public class ObjectArraysDb implements Database {
 
     public ObjectArraysDb(DB db) {
         this.db = db;
-        writer = new BatchWriter(db::createWriteBatch, db::write, 10000);
+        writer = new BatchWriter(db::createWriteBatch, db::write);
     }
 
     public final void put(ObjectArray array) {

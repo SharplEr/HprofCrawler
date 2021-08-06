@@ -14,7 +14,7 @@ public final class Object2ClassDb implements Database {
 
     public Object2ClassDb(DB db) {
         this.db = db;
-        writer = new BatchWriter(db::createWriteBatch, db::write, 10000);
+        writer = new BatchWriter(db::createWriteBatch, db::write);
     }
 
     public void put(long objectId, long classId) {

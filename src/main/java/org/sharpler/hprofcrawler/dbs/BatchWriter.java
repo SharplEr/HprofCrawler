@@ -11,30 +11,25 @@ import java.util.function.Supplier;
 public class BatchWriter {
     private final Supplier<? extends WriteBatch> generator;
     private final Consumer<? super WriteBatch> flusher;
-    private final int limit;
 
-    private int currentValue = 0;
+    private final long sizeLimit;
+
+    private long currentSize = 0;
 
     @Nullable
     private WriteBatch currentBatch = null;
 
-    public BatchWriter(
-            Supplier<? extends WriteBatch> generator,
-            Consumer<? super WriteBatch> flusher,
-            int limit)
-    {
+    public BatchWriter(Supplier<? extends WriteBatch> generator, Consumer<? super WriteBatch> flusher) {
         this.generator = generator;
         this.flusher = flusher;
-        this.limit = limit;
-
-        assert limit > 1;
+        this.sizeLimit = 100L * 1024L * 1024L;
     }
 
     public final void add(byte[] key, byte[] value) {
         if (currentBatch == null) {
             currentBatch = generator.get();
-            currentValue = 0;
-        } else if (currentValue == limit) {
+            currentSize = 0L;
+        } else if (currentSize + value.length + key.length >= sizeLimit) {
             flusher.accept(currentBatch);
             try {
                 currentBatch.close();
@@ -42,10 +37,10 @@ public class BatchWriter {
                 throw new UncheckedIOException(e);
             }
             currentBatch = generator.get();
-            currentValue = 0;
+            currentSize = 0L;
         }
         currentBatch.put(key, value);
-        currentValue++;
+        currentSize += (value.length + key.length);
     }
 
     public final void flush() {
@@ -56,7 +51,7 @@ public class BatchWriter {
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
-            currentValue = 0;
+            currentSize = 0L;
             currentBatch = null;
         }
     }

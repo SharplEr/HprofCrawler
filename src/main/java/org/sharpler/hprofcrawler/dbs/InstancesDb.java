@@ -22,7 +22,7 @@ public final class InstancesDb implements Database {
 
     public InstancesDb(DB db) {
         this.db = db;
-        writer = new BatchWriter(db::createWriteBatch, db::write, 10000);
+        writer = new BatchWriter(db::createWriteBatch, db::write);
     }
 
     public void put(Instance x) {

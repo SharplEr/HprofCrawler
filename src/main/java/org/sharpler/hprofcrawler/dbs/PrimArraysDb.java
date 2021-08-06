@@ -23,7 +23,7 @@ public class PrimArraysDb implements Database {
 
     public PrimArraysDb(DB db) {
         this.db = db;
-        writer = new BatchWriter(db::createWriteBatch, db::write, 10000);
+        writer = new BatchWriter(db::createWriteBatch, db::write);
     }
 
     public final void put(PrimArray primArray) {

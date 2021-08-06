@@ -14,7 +14,7 @@ public final class NamesDb implements Database {
 
     public NamesDb(DB db) {
         this.db = db;
-        this.writer = new BatchWriter(db::createWriteBatch, db::write, 10000);
+        this.writer = new BatchWriter(db::createWriteBatch, db::write);
     }
 
     public void put(long id, String name) {
