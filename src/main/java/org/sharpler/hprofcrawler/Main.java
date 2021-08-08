@@ -1,15 +1,10 @@
 package org.sharpler.hprofcrawler;
 
-import org.rocksdb.ColumnFamilyDescriptor;
-import org.rocksdb.ColumnFamilyHandle;
-import org.rocksdb.Options;
-import org.rocksdb.RocksDB;
 import org.sharpler.hprofcrawler.backend.Backend;
 import org.sharpler.hprofcrawler.backend.Index;
-import org.sharpler.hprofcrawler.backend.RocksDbBuilder;
-import org.sharpler.hprofcrawler.backend.RocksDbStorage;
+import org.sharpler.hprofcrawler.backend.LevelDbBuilder;
+import org.sharpler.hprofcrawler.backend.LevelDbStorage;
 import org.sharpler.hprofcrawler.dbs.ClassInfoDb;
-import org.sharpler.hprofcrawler.dbs.Database;
 import org.sharpler.hprofcrawler.dbs.InstancesDb;
 import org.sharpler.hprofcrawler.dbs.NamesDb;
 import org.sharpler.hprofcrawler.dbs.Object2ClassDb;
@@ -26,10 +21,6 @@ import java.nio.file.Paths;
 import java.util.concurrent.Callable;
 
 public final class Main implements Callable<Integer> {
-    static {
-        RocksDB.loadLibrary();
-    }
-
     @CommandLine.Option(
             names = {"-f", "--file"},
             paramLabel = "HPROF",
@@ -71,105 +62,22 @@ public final class Main implements Callable<Integer> {
             shouldRebuild = true;
         }
 
-        var object2ClassDescriptor = new ColumnFamilyDescriptor("object2Class".getBytes());
-        var instancesDescriptor = new ColumnFamilyDescriptor("instances".getBytes());
-        var primArraysDescriptor = new ColumnFamilyDescriptor("prim_arrays".getBytes());
-        var objectArraysDescriptor = new ColumnFamilyDescriptor("object_arrays".getBytes());
-        var namesDescriptor = new ColumnFamilyDescriptor("names".getBytes());
-        var classesDescriptor = new ColumnFamilyDescriptor("classes".getBytes());
 
-        try (
-                var dbOptions = new Options().setCreateIfMissing(true).setCreateMissingColumnFamilies(true);
-                var rocksDb = RocksDB.open(dbOptions, dbsDir.toString());
-                var object2ClassHandle = rocksDb.createColumnFamily(object2ClassDescriptor);
-                var instancesHandle = rocksDb.createColumnFamily(instancesDescriptor);
-                var primArraysHandle = rocksDb.createColumnFamily(primArraysDescriptor);
-                var objectArraysHandle = rocksDb.createColumnFamily(objectArraysDescriptor);
-                var namesHandle = rocksDb.createColumnFamily(namesDescriptor);
-                var classesHandle = rocksDb.createColumnFamily(classesDescriptor);
-        ) {
-            withDb(
-                    shouldRebuild,
-                    rocksDb,
-                    object2ClassHandle,
-                    instancesHandle,
-                    primArraysHandle,
-                    objectArraysHandle,
-                    namesHandle,
-                    classesHandle
-            );
-        }
-
-        return 0;
-    }
-
-    private void withDb(
-            boolean shouldRebuild,
-            RocksDB rocksDB,
-            ColumnFamilyHandle object2ClassHandle,
-            ColumnFamilyHandle instancesHandle,
-            ColumnFamilyHandle primArraysHandle,
-            ColumnFamilyHandle objectArraysHandle,
-            ColumnFamilyHandle namesHandle,
-            ColumnFamilyHandle classesHandle
-    ) throws IOException {
-        var object2Class = new Object2ClassDb(rocksDB, object2ClassHandle);
-        var instances = new InstancesDb(rocksDB, instancesHandle);
-        var primArrays = new PrimArraysDb(rocksDB, primArraysHandle);
-        var objectArrays = new ObjectArraysDb(rocksDB, objectArraysHandle);
-        var names = new NamesDb(rocksDB, namesHandle);
-        var classes = new ClassInfoDb(rocksDB, classesHandle);
-
-        var backend = shouldRebuild ?
-                initBackend(object2Class, instances, primArrays, objectArrays, names, classes) :
-                reloadBackend(object2Class, instances, primArrays, objectArrays, names, classes);
+        var backend = shouldRebuild ? initBackend(dbsDir, dumpPath) : reloadBackend(dbsDir);
 
         long startTime = System.currentTimeMillis();
         var result = inspection.run(backend, new TerminalProgress());
         long finishTime = System.currentTimeMillis();
 
         System.out.printf("Scan time: %d(ms)%n", finishTime - startTime);
+
         System.out.println(result);
+
+        return 0;
     }
 
-    private static Backend reloadBackend(
-            Object2ClassDb object2Class,
-            InstancesDb instances,
-            PrimArraysDb primArrays,
-            ObjectArraysDb objectArrays,
-            NamesDb names,
-            ClassInfoDb classes
-    ) {
-        return new Backend(
-                new RocksDbStorage(
-                        object2Class,
-                        instances,
-                        primArrays,
-                        objectArrays,
-                        names,
-                        classes
-                ),
-                Index.reload(primArrays, objectArrays)
-        );
-    }
-
-
-    private Backend initBackend(
-            Object2ClassDb object2Class,
-            InstancesDb instances,
-            PrimArraysDb primArrays,
-            ObjectArraysDb objectArrays,
-            NamesDb names,
-            ClassInfoDb classes
-    ) throws IOException {
-        var builder = new RocksDbBuilder(
-                object2Class,
-                instances,
-                primArrays,
-                objectArrays,
-                names,
-                classes
-        );
+    Backend initBackend(Path dbsDir, Path dumpPath) throws IOException {
+        var builder = LevelDbBuilder.of(dbsDir);
 
         var parser = new HprofParser(builder);
 
@@ -193,25 +101,37 @@ public final class Main implements Callable<Integer> {
         );
 
         startTime = System.currentTimeMillis();
-        var backend = builder.build();
+        var backend = builder.build(new TerminalProgress());
         finishTime = System.currentTimeMillis();
 
         System.out.printf("Build backend: %d(ms)%n", finishTime - startTime);
 
-        startTime = System.currentTimeMillis();
-        Database.compactAll(
-                new TerminalProgress(),
-                object2Class,
-                instances,
-                primArrays,
-                objectArrays,
-                names,
-                classes
-        );
-        finishTime = System.currentTimeMillis();
-
-        System.out.printf("compact %d(ms)%n", finishTime - startTime);
-
         return backend;
+    }
+
+    Backend reloadBackend(Path dir) {
+        return Utils.resourceOwner(
+                (object2Class, instances, primArraysDb, objectArraysDb, namesDb, classes) -> {
+                    var index = Index.reload(primArraysDb, objectArraysDb);
+                    return new Backend(
+                            new LevelDbStorage(
+                                    index,
+                                    object2Class,
+                                    instances,
+                                    primArraysDb,
+                                    objectArraysDb,
+                                    namesDb,
+                                    classes
+                            ),
+                            index
+                    );
+                },
+                () -> new Object2ClassDb(Utils.openDb(dir.resolve("object2Class"))),
+                () -> new InstancesDb(Utils.openDb(dir.resolve("instances"))),
+                () -> new PrimArraysDb(Utils.openDb(dir.resolve("prim_arrays"))),
+                () -> new ObjectArraysDb(Utils.openDb(dir.resolve("object_arrays"))),
+                () -> new NamesDb(Utils.openDb(dir.resolve("names"))),
+                () -> new ClassInfoDb(Utils.openDb(dir.resolve("classes")))
+        );
     }
 }
