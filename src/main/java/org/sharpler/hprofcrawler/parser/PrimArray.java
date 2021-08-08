@@ -1,5 +1,7 @@
 package org.sharpler.hprofcrawler.parser;
 
+import org.sharpler.hprofcrawler.Utils;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.StringJoiner;

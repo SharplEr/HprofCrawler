@@ -1,5 +1,7 @@
 package org.sharpler.hprofcrawler.backend;
 
+import org.sharpler.hprofcrawler.api.Progress;
+
 public interface BackendBuilder {
-    Backend build();
+    Backend build(Progress progress);
 }

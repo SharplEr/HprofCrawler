@@ -4,7 +4,10 @@ import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
+import org.sharpler.hprofcrawler.Utils;
+import org.sharpler.hprofcrawler.api.Progress;
 import org.sharpler.hprofcrawler.dbs.ClassInfoDb;
+import org.sharpler.hprofcrawler.dbs.Database;
 import org.sharpler.hprofcrawler.dbs.InstancesDb;
 import org.sharpler.hprofcrawler.dbs.NamesDb;
 import org.sharpler.hprofcrawler.dbs.Object2ClassDb;
@@ -20,11 +23,12 @@ import org.sharpler.hprofcrawler.parser.Static;
 import org.sharpler.hprofcrawler.parser.Type;
 import org.sharpler.hprofcrawler.views.ClassView;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
 
-public final class RocksDbBuilder extends DummyHandler implements BackendBuilder {
+public final class LevelDbBuilder extends DummyHandler implements BackendBuilder {
 
     private final Long2ObjectOpenHashMap<ClassView> classes = new Long2ObjectOpenHashMap<>();
 
@@ -45,7 +49,7 @@ public final class RocksDbBuilder extends DummyHandler implements BackendBuilder
 
     private final ClassInfoDb classInfoDb;
 
-    public RocksDbBuilder(
+    private LevelDbBuilder(
             Object2ClassDb object2ClassDb,
             InstancesDb instancesDb,
             PrimArraysDb primArraysDb,
@@ -59,6 +63,18 @@ public final class RocksDbBuilder extends DummyHandler implements BackendBuilder
         this.objectArraysDb = objectArraysDb;
         this.namesDb = namesDb;
         this.classInfoDb = classInfoDb;
+    }
+
+    public static LevelDbBuilder of(Path dir) {
+        return Utils.resourceOwner(
+                LevelDbBuilder::new,
+                () -> new Object2ClassDb(Utils.openDb(dir.resolve("object2Class"))),
+                () -> new InstancesDb(Utils.openDb(dir.resolve("instances"))),
+                () -> new PrimArraysDb(Utils.openDb(dir.resolve("prim_arrays"))),
+                () -> new ObjectArraysDb(Utils.openDb(dir.resolve("object_arrays"))),
+                () -> new NamesDb(Utils.openDb(dir.resolve("names"))),
+                () -> new ClassInfoDb(Utils.openDb(dir.resolve("classes")))
+        );
     }
 
     @Override
@@ -149,8 +165,11 @@ public final class RocksDbBuilder extends DummyHandler implements BackendBuilder
     }
 
 
-    public RocksDbStorage buildStorage() {
-        return new RocksDbStorage(
+    public LevelDbStorage buildStorage(Index index, Progress progress) {
+        Database.compactAll(progress, object2ClassDb, instancesDb, primArraysDb, objectArraysDb, namesDb, classInfoDb);
+
+        return new LevelDbStorage(
+                index,
                 object2ClassDb,
                 instancesDb,
                 primArraysDb,
@@ -161,7 +180,12 @@ public final class RocksDbBuilder extends DummyHandler implements BackendBuilder
     }
 
     @Override
-    public Backend build() {
-        return new Backend(buildStorage(), buildIndex());
+    public Backend build(Progress progress) {
+        Index index = buildIndex();
+
+        return new Backend(
+                buildStorage(index, progress),
+                index
+        );
     }
 }
