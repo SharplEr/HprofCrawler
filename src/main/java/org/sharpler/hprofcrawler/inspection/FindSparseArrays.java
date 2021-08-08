@@ -38,6 +38,7 @@ public final class FindSparseArrays implements Collector<ClassView, ObjectArrayV
                 .collect(Collectors.toList());
     }
 
+    @SuppressWarnings("unused")
     public static final class Stat {
         private final String name;
         private final long count;

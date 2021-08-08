@@ -1,86 +1,59 @@
 package org.sharpler.hprofcrawler.dbs;
 
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
-import org.iq80.leveldb.DB;
-import org.iq80.leveldb.DBIterator;
-import org.iq80.leveldb.ReadOptions;
+import org.rocksdb.ColumnFamilyHandle;
+import org.rocksdb.RocksDB;
 import org.sharpler.hprofcrawler.Utils;
 import org.sharpler.hprofcrawler.parser.ObjectArray;
 import org.sharpler.hprofcrawler.parser.PrimArray;
 import org.sharpler.hprofcrawler.parser.Type;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.Map;
-import java.util.Optional;
+import javax.annotation.Nullable;
 import java.util.function.Predicate;
 
 /**
  * Map: (classId, objectId) -> {@link PrimArray} where type == {@link Type#OBJ}.
  */
-public class ObjectArraysDb implements Database {
-    private final DB db;
-    private final BatchWriter writer;
+public class ObjectArraysDb extends Database {
 
-    public ObjectArraysDb(DB db) {
-        this.db = db;
-        writer = new BatchWriter(db::createWriteBatch, db::write);
+    public ObjectArraysDb(RocksDB db, ColumnFamilyHandle handle) {
+        super(db, handle);
     }
 
     public final void put(ObjectArray array) {
-        writer.add(
+        put(
                 Utils.serializeTwoLong(array.getElementsClassId(), array.getObjectId()),
                 array.serialize()
         );
     }
 
-    public Optional<PrimArray> find(long elementsClassId, long objectId) {
-        return Optional.ofNullable(db.get(Utils.serializeTwoLong(elementsClassId, objectId)))
-                .map(PrimArray::deserialize);
+    @Nullable
+    public PrimArray find(long elementsClassId, long objectId) {
+        return Utils.map(find(Utils.serializeTwoLong(elementsClassId, objectId)), PrimArray::deserialize);
     }
 
     public final void scan(long elementsClassId, Predicate<? super ObjectArray> consumer) {
-        try (DBIterator iterator = db.iterator()) {
-            iterator.seek(Utils.serializeLong(elementsClassId));
-            while (iterator.hasNext()) {
-                Map.Entry<byte[], byte[]> entry = iterator.next();
-                if (Utils.deserializeLong(entry.getKey()) != elementsClassId) {
+        try (var iterator = iterator()) {
+            for (iterator.seek(Utils.serializeLong(elementsClassId)); iterator.isValid(); iterator.next()) {
+                if (Utils.deserializeLong(iterator.key()) != elementsClassId) {
                     break;
                 }
 
-                if (consumer.test(ObjectArray.deserialize(entry.getValue()))) {
+                if (consumer.test(ObjectArray.deserialize(iterator.value()))) {
                     break;
                 }
             }
-
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
         }
     }
 
     public final Long2LongOpenHashMap reloadIndex() {
         var result = new Long2LongOpenHashMap();
-        try (DBIterator iterator = db.iterator(new ReadOptions().fillCache(false))) {
-            iterator.seekToFirst();
-            while (iterator.hasNext()) {
-                result.addTo(Utils.deserializeLong(iterator.next().getKey()), 1);
+        try (var iterator = iterator()) {
+            for (iterator.seekToFirst(); iterator.isValid(); iterator.next()) {
+                result.addTo(Utils.deserializeLong(iterator.key()), 1);
             }
-
             return result;
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
         }
-    }
-
-    @Override
-    public final void compact() {
-        writer.flush();
-        db.compactRange(Utils.serializeTwoLong(0L, 0L), Utils.serializeTwoLong(-1L, -1L));
-    }
-
-    @Override
-    public final void close() throws Exception {
-        db.close();
     }
 }
 
