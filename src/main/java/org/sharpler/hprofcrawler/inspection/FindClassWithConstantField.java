@@ -95,6 +95,7 @@ public final class FindClassWithConstantField implements
         }
     }
 
+    @SuppressWarnings("unused")
     static final class Stat {
         private final String name;
         private final List<FieldInfo> constants;
@@ -105,6 +106,7 @@ public final class FindClassWithConstantField implements
         }
     }
 
+    @SuppressWarnings("unused")
     public static final class FieldInfo {
         private final String fieldName;
         private final Value value;
